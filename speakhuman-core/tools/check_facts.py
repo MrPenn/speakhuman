@@ -4,14 +4,18 @@
     python3 tools/check_facts.py original.md revised.md [--source=notes.md ...] [--fail-on=MODE]
                                  [--profile=FILE] [--format=json]
 
-A specific is a number with its unit and rate ("20 minutes", "$250 a year", "47%"), a time or numeric date, a
-month or weekday, a name, an acronym, a quotation of three or more words, a URL, a vague amount ("half", "most
-banks") or an unnamed authority ("studies show", "experts say"). Number words count: "twenty minutes" and
-"20 minutes" are the same figure.
+A specific is a number with its unit and rate ("20 minutes", "$250 a year", "47%"), a frequency ("once a day",
+"twice a week", "every Tuesday", "weekly"), a time or numeric date, a month or weekday, a name, an acronym, a
+quotation of three or more words, a URL, a vague amount ("half", "most banks") or an unnamed authority ("studies
+show", "experts say"). Number words count: "twenty minutes" and "20 minutes" are the same figure, and "daily",
+"every day" and "once a day" are the same frequency. Each specific is counted, so one cut from a sentence is reported
+even when the same figure survives elsewhere.
 
 added:     in the revision but not in the original or any --source file. A fact the revision introduced: cut it,
            or confirm it with the author. A count or sum you worked out from the original is fine; say so.
-dropped:   in the original but not in the revision. Check that the cut was meant.
+dropped:   in the original but not in the revision, or there fewer times. Check that the cut was meant.
+repeated:  in the revision more times than in the original. The fact is not new, so this never fails the run; it is
+           there for a restatement you did not mean.
 unchecked: a capitalized word that starts a sentence in the revision and appears nowhere in the original. It may be
            a new name ("Smith saw the pattern") or an ordinary word; a script cannot tell, so read each one.
 
@@ -94,6 +98,30 @@ ACRO_RE = re.compile(r"\b[A-Z][A-Z0-9&]{1,9}s?\b")
 VAGUE_RE = re.compile(r"\b(?:half|a third|a quarter|two thirds|three quarters|(?:the |a )?(?:vast )?majority|"
                       r"a minority|nearly all|almost all|most (?:of )?(?:the |our |their |your )?[a-z]+s)\b", re.I)
 ARTICLES = ("The", "A", "An", "In", "At", "On", "For", "By", "From", "And", "But")
+_PERIODS = "hour|day|week|month|quarter|year"
+FREQ_RE = re.compile(
+    r"\b(?:(?P<n>once|twice|thrice|(?:\d+|" + "|".join(ONES[2:]) + r") times) (?:a|an|per|each) (?P<u>" + _PERIODS + r")"
+    r"|every (?P<other>other )?(?P<eu>" + _PERIODS + r"|morning|afternoon|evening|night|weekday|weekend|monday|tuesday|"
+    r"wednesday|thursday|friday|saturday|sunday)"
+    r"|(?P<ly>hourly|daily|nightly|weekly|biweekly|monthly|quarterly|annually|yearly))\b", re.I)
+FREQ_COUNT = {"once": 1, "twice": 2, "thrice": 3}
+FREQ_LY = {"hourly": "1/hour", "daily": "1/day", "nightly": "1/night", "weekly": "1/week", "biweekly": "biweekly",
+           "monthly": "1/month", "quarterly": "1/quarter", "annually": "1/year", "yearly": "1/year"}
+
+
+def freq_key(m):
+    """'once a day', 'daily' and 'every day' share one key: freq:1/day."""
+    if m.group("ly"):
+        return "freq:" + FREQ_LY[m.group("ly").lower()]
+    if m.group("eu"):
+        return "freq:%s/%s" % ("0.5" if m.group("other") else "1", m.group("eu").lower())
+    n = m.group("n").lower()
+    count = FREQ_COUNT.get(n) or (int(n.split()[0]) if n.split()[0].isdigit() else WORDS[n.split()[0]])
+    return "freq:%s/%s" % (count, m.group("u").lower())
+
+
+def overlaps(m, spans):
+    return any(a < m.end() and m.start() < b for a, b in spans)
 
 
 def authority_patterns():
@@ -153,11 +181,17 @@ def name_segments(text):
 
 
 def specifics(text):
-    """Return ({key: (kind, text, line)}, {word: line} for sentence-initial capitalized words)."""
-    out, starters = {}, {}
+    """Return ({key: [kind, text, first line, count]}, {word: line} for sentence-initial capitalized words)."""
+    out, starters, forms = {}, {}, {}
 
     def add(key, kind, shown, ln):
-        out.setdefault(key, (kind, shown.strip(), ln))
+        shown = shown.strip().rstrip(",;:")
+        if key in out:
+            out[key][3] += 1
+        else:
+            out[key] = [kind, shown, ln, 1]
+        if shown.lower() not in [f.lower() for f in forms.setdefault(key, [])]:
+            forms[key].append(shown)
     raw = text.split("\n")
     for ln, line in enumerate(strip_noise(text).split("\n"), start=1):
         for m in URL_RE.finditer(line):
@@ -171,7 +205,17 @@ def specifics(text):
         for m in TIME_RE.finditer(line):
             add("time:" + m.group(), "time", m.group(), ln)
         rest = TIME_RE.sub(" ", line)
-        for m in NUM_RE.finditer(rest):
+        nums = list(NUM_RE.finditer(rest))
+        # A rate on a number ("$250 annually") belongs to the number; any other frequency stands on its own, and a
+        # number word inside it ("two times a week") is part of the frequency, not a separate figure.
+        rated = [(m.start(), m.end()) for m in nums if m.group("rate") or m.group("rate2") or m.group("rate3")]
+        freqs = [m for m in FREQ_RE.finditer(rest) if not overlaps(m, rated)]
+        for m in freqs:
+            add(freq_key(m), "frequency", m.group(), ln)
+        fspans = [(m.start(), m.end()) for m in freqs]
+        for m in nums:
+            if overlaps(m, fspans):
+                continue
             if m.group("n"):
                 try:
                     v = float(m.group("n").replace(",", ""))
@@ -217,6 +261,8 @@ def specifics(text):
                         starters.setdefault(w, ln)
                     continue
                 add("name:" + name, "name", name, ln)
+    for key, fs in forms.items():
+        out[key][1] = " / ".join(fs[:3])   # every wording of the same fact: "once a day / daily"
     return out, starters
 
 
@@ -234,18 +280,20 @@ def present(key, kind, shown, pool, pool_text):
 
 
 def compare(original, revised, sources=()):
-    """Return (added, dropped, unchecked). added and dropped are [(key, (kind, text, line))]; unchecked is
-    [(word, line)]."""
+    """Return (added, dropped, unchecked, repeated). added, dropped and repeated are [(key, [kind, text, line,
+    count before, count after])]; unchecked is [(word, line)]."""
     base_text = "\n".join([original] + list(sources))
     base, _ = specifics(base_text)
     rev, rev_starters = specifics(revised)
-    added = [(k, v) for k, v in rev.items() if not present(k, v[0], v[1], base, base_text)]
     orig, _ = specifics(original)
-    dropped = [(k, v) for k, v in orig.items() if not present(k, v[0], v[1], rev, revised)]
+    added = [(k, v[:3] + [0, v[3]]) for k, v in rev.items() if not present(k, v[0], v[1], base, base_text)]
+    dropped = [(k, v[:3] + [v[3], 0]) for k, v in orig.items() if not present(k, v[0], v[1], rev, revised)]
+    dropped += [(k, v[:3] + [v[3], rev[k][3]]) for k, v in orig.items() if k in rev and rev[k][3] < v[3]]
+    repeated = [(k, v[:3] + [base[k][3], v[3]]) for k, v in rev.items() if k in base and v[3] > base[k][3]]
     low = base_text.lower()
     unchecked = [(w, ln) for w, ln in rev_starters.items()
                  if not re.search(r"(?<![\w-])" + re.escape(w.lower()) + r"(?![\w-])", low)]
-    return added, dropped, unchecked
+    return added, dropped, unchecked, repeated
 
 
 def read(path):
@@ -287,21 +335,24 @@ def main(argv):
     if mode not in FAIL_MODES:
         sys.stderr.write("check_facts: fail-on must be one of %s, not %r\n" % (", ".join(FAIL_MODES), mode))
         return 2
-    added, dropped, unchecked = compare(original, revised, sources)
+    added, dropped, unchecked, repeated = compare(original, revised, sources)
     failed = bool(added) or (mode != "added" and bool(dropped)) or (mode == "anything_unchecked" and bool(unchecked))
     if fmt == "json":
-        row = lambda kv: {"kind": kv[1][0], "text": kv[1][1], "line": kv[1][2]}  # noqa: E731
+        row = lambda kv: {"kind": kv[1][0], "text": kv[1][1], "line": kv[1][2], "before": kv[1][3], "after": kv[1][4]}  # noqa: E731
         print(json.dumps({"added": [row(a) for a in added], "dropped": [row(d) for d in dropped],
+                          "repeated": [row(r) for r in repeated],
                           "unchecked": [{"text": w, "line": ln} for w, ln in unchecked],
                           "fail_on": mode, "failed": failed}, indent=1))
     else:
-        for label, items, where in (("added", added, files[1]), ("dropped", dropped, files[0])):
-            for _, (kind, shown, ln) in items:
-                print("%s:%d: %s %s: %s" % (where, ln, label, kind, shown))
+        for label, items, where in (("added", added, files[1]), ("dropped", dropped, files[0]),
+                                    ("repeated", repeated, files[1])):
+            for _, (kind, shown, ln, before, after) in items:
+                counts = " (%d in the original, %d now)" % (before, after) if before and after else ""
+                print("%s:%d: %s %s: %s%s" % (where, ln, label, kind, shown, counts))
         for w, ln in unchecked:
             print("%s:%d: unchecked: %s (starts a sentence; a new name or an ordinary word?)" % (files[1], ln, w))
-        print("check_facts: %d added (not in the original%s), %d dropped, %d unchecked; fails on %s: %s." % (
-            len(added), " or the sources" if sources else "", len(dropped), len(unchecked), mode,
+        print("check_facts: %d added (not in the original%s), %d dropped, %d repeated, %d unchecked; fails on %s: %s." % (
+            len(added), " or the sources" if sources else "", len(dropped), len(repeated), len(unchecked), mode,
             "failed" if failed else "passed"))
     return 1 if failed else 0
 

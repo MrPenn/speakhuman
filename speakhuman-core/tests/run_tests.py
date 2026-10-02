@@ -829,7 +829,8 @@ def test_judge_tools():
 
 
 def test_check_facts():
-    """tools/check_facts.py: a revision may not add a number, date, name, quote or link the author did not give."""
+    """tools/check_facts.py: a revision may not add a number, frequency, date, name, quote or link the author did not
+    give, and every specific it drops, even one occurrence of several, is reported."""
     import importlib.util
     spec = importlib.util.spec_from_file_location("check_facts", os.path.join(ROOT, "tools", "check_facts.py"))
     cf = importlib.util.module_from_spec(spec)
@@ -868,6 +869,15 @@ def test_check_facts():
        "vague amounts and unnamed authorities are added claims")
     unchecked = sorted(w for w, _ in cf.compare("The team saw it.", "Smith saw it first. However, it held.")[2])
     ok(unchecked == ["Smith"], "a new word that starts a sentence is listed as unchecked: %s" % unchecked)
+    ok(dropped("Triage says no once a day and is overruled once a week.", "Triage says no and is overruled.")
+       == ["once a day", "once a week"], "a dropped frequency is a dropped fact")
+    ok(added("Reviews run once a day.", "Reviews run daily.") == [] and added("We meet twice a week.", "We meet two times a week.") == []
+       and added("Every Monday we ship.", "We ship every Monday.") == [], "the same frequency in other words is not a new fact")
+    ok(added("We pay $250 a year.", "We pay $250 annually.") == [], "a rate on a number is not a separate frequency")
+    ok(dropped("We built 400 assets. Later 400 assets were reused.", "We built 400 assets.") == ["400"],
+       "a figure cut from one sentence is dropped even when it survives in another")
+    a, d, u, r = cf.compare("The fee is $5.", "The fee is $5. Again, $5.")
+    ok(not a and not d and [v[1] for _, v in r] == ["$5"], "a restated figure is repeated, not added")
     if QUICK:
         return
     tmp = tempfile.mkdtemp(prefix="speakhuman-facts-")

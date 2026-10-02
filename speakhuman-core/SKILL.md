@@ -21,7 +21,7 @@ Files:
 - `tools/build_patterns.py`: regenerates the catalogue after you change a rule.
 - `tools/rule_evidence.py`: measures what each rule costs on the human corpus and how many of its must-flag cases it catches; `--write` records the figures in each rule's `evidence` field.
 - `tools/make_judge_input.py`, `tools/check_verdicts.py` and `tools/score_judge.py`: build the judge prompt for a draft, validate what the judge returns, and score verdicts against labeled test paragraphs.
-- `tools/check_facts.py`: compares a revision with what the author gave you and lists every number, date, name, quote, link, vague amount or unnamed authority the revision added or dropped.
+- `tools/check_facts.py`: compares a revision with what the author gave you and lists every number, frequency, date, name, quote, link, vague amount or unnamed authority the revision added, dropped or repeated.
 - `tests/blind/`: how to run a blind test of the judge pass, with the labels and verdicts from the first two runs.
 
 ## Find the linter
@@ -94,7 +94,7 @@ python3 "$(dirname "$L")/tools/check_facts.py" original.md revised.md           
 python3 "$(dirname "$L")/tools/check_facts.py" original.md revised.md --source=notes.md   # plus notes or data they gave you
 ```
 
-A specific is a number with its unit and rate ("20 minutes", "$250 a year", "47%"), a time or numeric date, a month or weekday, a name, an acronym, a quotation of three or more words, a URL, a vague amount (`half`, `most banks`) or an unnamed authority (`studies show`; the same patterns as the linter's `weasel-attribution` rule). Number words count as figures, so "twenty minutes" and "20 minutes" match. An `added` line is in the revision and in nothing the author gave you: cut it or ask for it. A `dropped` line was in the original and is gone: check that the cut was meant. An `unchecked` line is a capitalized word that starts a sentence in the revision and appears nowhere in the original, which is where a new name hides; read each one.
+A specific is a number with its unit and rate ("20 minutes", "$250 a year", "47%"), a frequency ("once a day", "twice a week", "every Tuesday", "weekly"), a time or numeric date, a month or weekday, a name, an acronym, a quotation of three or more words, a URL, a vague amount (`half`, `most banks`) or an unnamed authority (`studies show`; the same patterns as the linter's `weasel-attribution` rule). Number words count as figures, so "twenty minutes" and "20 minutes" match, and "daily", "every day" and "once a day" are one frequency. Each specific is counted, so a figure cut from one sentence is reported even when it survives in another. An `added` line is in the revision and in nothing the author gave you: cut it or ask for it. A `dropped` line was in the original and is gone, or appears fewer times: check that the cut was meant. A `repeated` line appears more times than in the original; the fact is not new, so it never fails the run, but it is where a restatement you did not mean shows up. An `unchecked` line is a capitalized word that starts a sentence in the revision and appears nowhere in the original, which is where a new name hides; read each one.
 
 The profile's `fact_check_fail_on` sets what fails the run: `added` (the default), `added_or_dropped` (the strict preset) or `anything_unchecked`; `--fail-on=` overrides it for one run. Exit codes: 0 when nothing fails under that setting, 1 when something does, 2 for a usage error; `--format=json` is machine-readable.
 

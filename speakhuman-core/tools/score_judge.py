@@ -5,7 +5,9 @@
 
 labels.json:   [{"para_id": 1, "text": "...", "slop": [{"sentence": "exact sentence", "shape": "S1"}]}]
 verdicts.json: [{"para_id": 1, "verdicts": [{"i": 0, "shape": "S1"}]}]  (i indexes the paragraph's sentences)
-Prints per-paragraph recall and false-positive counts, then totals.
+Prints per-paragraph recall and false-positive counts, then totals, including how often the judge named the same
+shape as the label on the sentences it caught. A caught sentence counts toward recall whatever shape the judge named,
+so shape agreement is reported on its own line, and only for labels that use the codes in references/shapes.md.
 
 The score is refused (exit 1) when the inputs do not line up: a labeled sentence that matches no sentence or more
 than one, a duplicate para_id, or a verdict index outside its paragraph. A label that silently failed to match
@@ -43,7 +45,7 @@ def main(argv):
         verd[v["para_id"]] = v["verdicts"]
     ids = [p["para_id"] for p in labels]
     problems += ["labels: para_id %s appears more than once" % i for i in sorted({i for i in ids if ids.count(i) > 1})]
-    tot_slop = tot_hit = tot_fp = tot_clean = 0
+    tot_slop = tot_hit = tot_fp = tot_clean = tot_shape = tot_coded = 0
     lines = []
     for p in labels:
         doc = sl.read_doc("x.md", p["text"] + "\n")
@@ -53,7 +55,7 @@ def main(argv):
             continue
         blk = blocks[0]
         sents = [blk.text[a:e].strip() for a, e in blk.sents()]
-        slop_idx = set()
+        slop_idx, label_shape = set(), {}
         for s in p["slop"]:
             key = norm(s["sentence"])
             hits = [i for i, t in enumerate(sents) if key and key in norm(t)]
@@ -61,7 +63,9 @@ def main(argv):
                 problems.append("para %s: label %r matches %d sentences; it must match exactly one"
                                 % (p["para_id"], s["sentence"][:60], len(hits)))
             slop_idx.update(hits[:1])
-        flagged = set()
+            if hits:
+                label_shape[hits[0]] = s.get("shape")
+        flagged, judged_shape = set(), {}
         for v in verd.get(p["para_id"], []):
             i = v.get("i")
             if not isinstance(i, int) or isinstance(i, bool) or not 0 <= i < len(sents):
@@ -69,11 +73,15 @@ def main(argv):
                                 % (p["para_id"], i, len(sents)))
                 continue
             flagged.add(i)
+            judged_shape[i] = v.get("shape")
         hit, fp = slop_idx & flagged, flagged - slop_idx
         tot_slop += len(slop_idx)
         tot_hit += len(hit)
         tot_fp += len(fp)
         tot_clean += len(sents) - len(slop_idx)
+        coded = [i for i in hit if re.fullmatch(r"S\d+b?", str(label_shape.get(i)))]
+        tot_coded += len(coded)
+        tot_shape += sum(1 for i in coded if judged_shape.get(i) == label_shape.get(i))
         lines.append("para %2d: caught %d of %d slop sentences; %d false flag(s) on %d clean sentences" % (
             p["para_id"], len(hit), len(slop_idx), len(fp), len(sents) - len(slop_idx)))
         lines += ["         missed: " + sents[i][:90] for i in sorted(slop_idx - flagged)]
@@ -88,6 +96,11 @@ def main(argv):
     print("\n".join(lines))
     print("TOTAL: caught %d of %d (%.0f%%); false flags %d of %d clean sentences" % (
         tot_hit, tot_slop, 100.0 * tot_hit / max(1, tot_slop), tot_fp, tot_clean))
+    if tot_coded:
+        print("SHAPE: the judge named the labeled shape on %d of %d caught sentences whose label uses a shape code"
+              % (tot_shape, tot_coded))
+    else:
+        print("SHAPE: not measured: the labels name shapes in their own words, not the codes in references/shapes.md")
     return 0
 
 

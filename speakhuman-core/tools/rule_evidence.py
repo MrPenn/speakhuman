@@ -74,19 +74,31 @@ def human_docs():
         yield from docs
 
 
+_MEASURED = {}
+
+
+def measure_genres():
+    """{genre: (words, errors, warnings, documents with an error)} for every genre on this machine, under the corpus
+    test's settings. Measured once per process: the corpus test and the table check share it."""
+    if not _MEASURED:
+        rules = sl.load_rules(profile=corpus_profile())
+        for genre, docs in human_genres().items():
+            words = errors = warnings = failing = 0
+            for doc in docs:
+                words += sl.doc_words(doc)
+                fs = sl.lint_doc(doc, rules, {"mode": "density", "min": 2})
+                e = sum(1 for f in fs if f.severity == "error")
+                errors += e
+                warnings += sum(1 for f in fs if f.severity == "warn")
+                failing += bool(e)
+            _MEASURED[genre] = (words, errors, warnings, failing)
+    return _MEASURED
+
+
 def genre_rows():
-    """[(genre, words, errors per 1000, warnings per 1000)] under the corpus test's settings."""
-    rules = sl.load_rules(profile=corpus_profile())
-    rows = []
-    for genre, docs in public_genres().items():
-        e = w = words = 0
-        for doc in docs:
-            words += sl.doc_words(doc)
-            for f in sl.lint_doc(doc, rules, {"mode": "density", "min": 2}):
-                e += f.severity == "error"
-                w += f.severity == "warn"
-        rows.append((genre, words, 1000.0 * e / max(1, words), 1000.0 * w / max(1, words)))
-    return rows
+    """[(genre, words, errors per 1000, warnings per 1000)] for the public genres."""
+    return [(g, n, 1000.0 * e / max(1, n), 1000.0 * w / max(1, n))
+            for g, (n, e, w, _) in measure_genres().items() if g not in LOCAL_ONLY]
 
 
 def genre_table():

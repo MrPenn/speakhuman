@@ -27,11 +27,12 @@ Files:
 ## Find the linter
 
 ```bash
-L=$(find ~/.claude/skills ~/.claude/plugins ./.claude/skills /mnt/skills /mnt/user-data -name speakhuman_lint.py -path '*speakhuman-core*' 2>/dev/null | head -1)
+L="<the folder you read this file from>/speakhuman_lint.py"
+[ -f "$L" ] || L=$(find ~/.claude/skills ~/.claude/plugins ./.claude/skills /mnt/skills /mnt/user-data -name speakhuman_lint.py -path '*speakhuman-core*' 2>/dev/null | head -1)
 echo "$L"
 ```
 
-If that prints nothing, use the folder you read this file from. In chat and Cowork the skill folder is read-only, so write drafts to the working directory and pass the file to the linter.
+Use the copy in this folder, so another install elsewhere cannot stand in for it; the search is only for when you cannot tell where this folder is. In chat and Cowork the skill folder is read-only, so write drafts to the working directory and pass the file to the linter.
 
 ## Run it
 
@@ -128,7 +129,7 @@ The linter reads the first profile it finds: `--profile=FILE`, `$SPEAKHUMAN_PROF
 
 Keys that start with `_` are ignored, so use `_help` or `_note` for comments.
 
-A regular expression in a profile can hang the linter, so regex phrases are ignored unless `allow_regex` is true; set it only on a profile you wrote or read. A `speakhuman-profile.json` in the folder being linted is picked up automatically for its rule settings, but it is someone's project configuration, so it cannot switch on `allow_regex` or supply a `voice_file`: the linter ignores both and says so. Pass it with `--profile` (or set `$SPEAKHUMAN_PROFILE`) when it is the user's own, and check the profile the summary line names when you lint someone else's repository.
+A regular expression in a profile can hang the linter, so regex phrases are ignored unless `allow_regex` is true; set it only on a profile you wrote or read. A `speakhuman-profile.json` in the folder being linted is picked up automatically for its rule settings, but it is someone's project configuration: it cannot switch on `allow_regex` or supply a `voice_file`, `voice_notes` or `cta_line` (the linter ignores them and says so), and the summary names every rule class, rule, severity or word it switches off or lowers. Pass it with `--profile` (or set `$SPEAKHUMAN_PROFILE`) when it is the user's own, and check the profile the summary line names when you lint someone else's repository.
 
 ### Setting up a profile
 
@@ -147,7 +148,7 @@ When a user rejects a phrase and wants it banned for good, add it to `rejected_p
 
 ## Tests
 
-`python3 tests/run_tests.py --quick` runs the in-process checks in about a second. The full run adds the CLI subprocess tests and an adversarial regex timing pass, and takes a few seconds. `--regex-safety` runs only the timing pass. Both print the error and warning rates on the human corpus in `tests/human/`.
+`python3 tests/run_tests.py --quick` runs the in-process checks in about a second. The full run adds the command-line runs, the human corpus in `tests/human/` with its ceilings, the generated evidence and corpus table, and an adversarial regex timing pass, and takes about ten seconds; it prints the error and warning rates for each genre. `--regex-safety` runs only the timing pass. GitHub runs the full suite on Python 3.9 and 3.13 for every push (`.github/workflows/tests.yml`).
 
 ## Adding or changing a rule
 

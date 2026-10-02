@@ -10,7 +10,7 @@
                              for warn, since text output prints the warn level as "warning"
     --only=ids               comma-separated rule ids (wildcards allowed: x-not-y*)
     --ignore=ids             comma-separated rule ids to skip
-    --baseline=FILE          report only findings not listed in FILE
+    --baseline=FILE          report only findings not listed in FILE (each line covers one occurrence)
     --write-baseline=FILE    write current findings to FILE and exit 0
     --dest=markdown|plain    how to read stdin and .md/.txt input (plain = email,
                              LinkedIn, commit message: markdown syntax is a finding)
@@ -240,13 +240,28 @@ def load_profile(explicit=None):
             if cand != explicit and cand != os.environ.get("SPEAKHUMAN_PROFILE") and profile_from_workdir(cand):
                 # A profile that came with the folder being linted is someone's project settings, not the user's
                 # own: it may tune rules, but it may not run regular expressions or hand the writer a voice file.
-                for key, off in (("allow_regex", False), ("voice_file", "")):
+                for key, off in (("allow_regex", False), ("voice_file", ""), ("voice_notes", ""), ("cta_line", "")):
                     if prof.get(key):
                         sys.stderr.write("speakhuman: ignoring %s in %s; pass the profile with --profile to use it\n"
                                          % (key, cand))
                         prof[key] = off
             return prof, cand
     return dict(PROFILE_DEFAULTS), None
+
+
+def profile_relaxations(prof):
+    """What a profile turns off or lowers, in words, for the summary when the profile came with the project."""
+    out = []
+    if prof.get("disable_classes"):
+        out.append("switches off the %s class(es)" % ", ".join(prof["disable_classes"]))
+    if prof.get("disable_rules"):
+        out.append("switches off %s" % ", ".join(prof["disable_rules"]))
+    lowered = [r for r, s in (prof.get("severity_overrides") or {}).items() if s in ("info", "warn")]
+    if lowered:
+        out.append("lowers %s" % ", ".join(sorted(lowered)))
+    if prof.get("allowed_words"):
+        out.append("allows %s" % ", ".join(prof["allowed_words"]))
+    return out
 
 
 def phrase_regex(p):
@@ -1382,6 +1397,53 @@ RETIRED_RE = re.compile(CMT + r"slop-lint[ \t]+retired[ \t]*:[ \t]*([^\n]*?)[ \t
 # blanked with the region instead of leaking into the text as a stray "-->".
 OFFON_RE = re.compile(CMT + r"slop-lint[ \t]+(off|on)\b(?:[^\n]*?(?:-->|\*/))?")
 COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script\s*>", re.S | re.I)
+
+
+def script_regions(src, kind):
+    """The parts of a file that are script code, where a directive has to sit in a comment."""
+    if kind == "js":
+        return [(0, len(src))]
+    regions = []
+    if kind == "astro":
+        fm = re.match(r"\s*---[ \t]*\n(.*?)\n---[ \t]*(?:\n|$)", src, re.S)
+        if fm:
+            regions.append((fm.start(1), fm.end(1)))
+    if kind in ("html", "astro", "vue", "svelte"):
+        regions += [(m.start(1), m.end(1)) for m in SCRIPT_RE.finditer(src)]
+    return regions
+
+
+def string_spans(src, regions):
+    """Spans of string and template literals in script code. A 'slop-ok' or 'slop-lint off' inside one is UI text
+    or data, so it must not suppress anything."""
+    spans = []
+    for a, b in regions:
+        i = a
+        while i < b:
+            if src.startswith("//", i):
+                j = src.find("\n", i)
+                i = b if j < 0 or j > b else j
+                continue
+            if src.startswith("/*", i):
+                j = src.find("*/", i + 2)
+                i = b if j < 0 or j > b else j + 2
+                continue
+            c = src[i]
+            if c in "'\"`":
+                j = i + 1
+                while j < b and src[j] != c:
+                    if src[j] == "\\":
+                        j += 2
+                        continue
+                    if c != "`" and src[j] == "\n":
+                        break
+                    j += 1
+                spans.append((i, min(j + 1, b)))
+                i = j + 1
+                continue
+            i += 1
+    return spans
 
 
 def code_lines(src):
@@ -1424,11 +1486,14 @@ def read_doc(path, src, dest_override=None):
     doc = Doc(path, src, dest, kind)
 
     fenced = code_lines(src) if kind in ("md", "plain") else set()
+    strings = string_spans(src, script_regions(src, kind))
 
     def live(m):
         li = doc.pos(m.start())[0]
         line = src[doc.line_starts[li - 1]:m.start()]
-        return li not in fenced and line.count("`") % 2 == 0
+        if strings and any(a <= m.start() < b for a, b in strings):
+            return False
+        return li not in fenced and (kind != "md" and kind != "plain" or line.count("`") % 2 == 0)
 
     for m in OKLINE_RE.finditer(src):
         if live(m):
@@ -1516,7 +1581,7 @@ def parse_locale_json(doc, src, dest):
         if after.startswith(":"):
             continue
         raw = m.group()[1:-1]
-        if not re.search(r"[A-Za-z]{2,}", raw) or re.fullmatch(r"\s*(?:https?://|mailto:|/|\.{0,2}/)\S*\s*", raw):
+        if not re.search(r"[^\W\d_]{2,}", raw) or re.fullmatch(r"\s*(?:https?://|mailto:|/|\.{0,2}/)\S*\s*", raw):
             continue
         tb, k, base = TB(), 0, m.start() + 1
         while k < len(raw):
@@ -2424,6 +2489,7 @@ def main(argv):
         return usage_error("--dest must be markdown or plain")
     try:
         prof, prof_path = load_profile(profile_arg)
+        project_changes = profile_relaxations(prof) if profile_from_workdir(prof_path) else []
     except (OSError, ValueError) as e:
         sys.stderr.write("speakhuman: cannot load the profile: %s\n" % e)
         return 2
@@ -2514,7 +2580,7 @@ def main(argv):
     findings = [f for f in findings if SEV_RANK[f.severity] >= SEV_RANK[min_sev]]
 
     if write_bl is not None:
-        fps = sorted({fingerprint(f) for f in findings})
+        fps = sorted(fingerprint(f) for f in findings)   # one line per occurrence, so a new copy is not hidden
         with open(write_bl, "w", encoding="utf-8") as fh:
             fh.write("# speakhuman baseline: accepted findings. Only findings NOT listed here are reported.\n")
             fh.write("# Regenerate: speakhuman_lint.py --write-baseline=%s %s\n" % (write_bl, " ".join(paths)))
@@ -2526,10 +2592,19 @@ def main(argv):
     if baseline is not None:
         try:
             with open(baseline, "r", encoding="utf-8") as fh:
-                base = {ln.rstrip("\n") for ln in fh if ln.strip() and not ln.startswith("#")}
+                base = {}
+                for ln in fh:
+                    if ln.strip() and not ln.startswith("#"):
+                        base[ln.rstrip("\n")] = base.get(ln.rstrip("\n"), 0) + 1
         except OSError as e:
             return usage_error("cannot read baseline %s: %s" % (baseline, e))
-        kept = [f for f in findings if fingerprint(f) not in base]
+        kept = []
+        for f in sorted(findings, key=lambda f: (f.path, f.line, f.col)):
+            fp = fingerprint(f)
+            if base.get(fp, 0) > 0:
+                base[fp] -= 1
+            else:
+                kept.append(f)
         n_base = len(findings) - len(kept)
         findings = kept
 
@@ -2539,7 +2614,8 @@ def main(argv):
     if fmt == "json":
         print(json.dumps({"summary": {"files": len(per_file), "words": total_words, "errors": ne, "warnings": nw,
                                       "info": ni, "baselined": n_base, "suppressed": n_supp, "off_lines": n_off,
-                                      "skipped": skipped, "not_english_blocks": not_english, "profile": prof_path},
+                                      "skipped": skipped, "not_english_blocks": not_english, "profile": prof_path,
+                                      "project_profile_changes": project_changes},
                           "files": [{"path": p, "metrics": m} for p, m in per_file],
                           "findings": [f.as_dict() for f in findings]}, indent=1, ensure_ascii=True))
     else:
@@ -2556,6 +2632,9 @@ def main(argv):
             print("Suppressed: %d finding(s) by slop-ok, %d line(s) inside slop-lint off regions." % (n_supp, n_off))
         gaps = (["%d file(s) larger than %d MB" % (len(skipped), MAX_BYTES // 1_000_000)] if skipped else []) + \
                (["%d block(s) not in English (SpeakHuman checks English only)" % not_english] if not_english else [])
+        if project_changes:
+            print("Project profile %s: it came with the folder being linted, and it %s. Pass it with --profile "
+                  "if it is yours." % (prof_path, "; ".join(project_changes)))
         if gaps:
             print("Not checked: %s." % ", ".join(gaps))
         print("speakhuman: %d file(s), %d words: %d error(s), %d warning(s), %d info%s. Profile: %s." % (

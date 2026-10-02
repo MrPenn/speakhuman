@@ -30,10 +30,11 @@ Short writing gets read in full, so one stock phrase shows. These twelve rules c
 
 ## Procedure
 
-1. Load the author's voice, unless the piece is a commit subject or a one-line label. The linter sits in the `speakhuman-core` folder next to this skill's folder; the `find` locates it when you do not know where that is.
+1. Load the author's voice, unless the piece is a commit subject or a one-line label. The linter sits in the `speakhuman-core` folder next to the folder you read this file from. Use that copy, so another install elsewhere cannot stand in for it, and search only when it is missing.
 
 ```bash
-L=$(find ~/.claude/skills ~/.claude/plugins ./.claude/skills /mnt/skills /mnt/user-data -name speakhuman_lint.py -path '*speakhuman-core*' 2>/dev/null | head -1)
+L="<folder this SKILL.md is in>/../speakhuman-core/speakhuman_lint.py"
+[ -f "$L" ] || L=$(find ~/.claude/skills ~/.claude/plugins ./.claude/skills /mnt/skills /mnt/user-data -name speakhuman_lint.py -path '*speakhuman-core*' 2>/dev/null | head -1)
 python3 "$L" --voice
 ```
 

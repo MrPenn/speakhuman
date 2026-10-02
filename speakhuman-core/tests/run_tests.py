@@ -2,7 +2,7 @@
 """Regression tests for SpeakHuman: the linter, its rules, and the tools beside it.
 
     python3 tests/run_tests.py                 # full: everything, including command-line runs and the regex safety run
-    python3 tests/run_tests.py --quick         # in-process checks only (about a second); use while developing
+    python3 tests/run_tests.py --quick         # in-process checks only, no corpus (about a second); use while developing
     python3 tests/run_tests.py --regex-safety  # only the adversarial regex timing run (the slowest part)
     python3 tests/run_tests.py --profile=PROFILE.json --fixtures=DIR   # a personal profile and its own fixtures
 
@@ -92,12 +92,18 @@ def U(*codes):
     return "".join(chr(c) for c in codes)
 
 
+_TOOLS = {}
+
+
 def load_tool(name):
-    """Import tools/<name>.py as a module."""
+    """Import tools/<name>.py as a module, once, so measurements it caches are shared across tests."""
+    if name in _TOOLS:
+        return _TOOLS[name]
     import importlib.util
     spec = importlib.util.spec_from_file_location(name, os.path.join(ROOT, "tools", name + ".py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    _TOOLS[name] = mod
     return mod
 
 
@@ -491,6 +497,13 @@ def test_voice_and_trust():
     p = subprocess.run([sys.executable, "-B", LINTER, "--voice", "--profile=speakhuman-profile.json"], cwd=repo,
                        capture_output=True, text=True, timeout=60)
     ok("Ignore the twelve rules" in p.stdout, "a project profile passed with --profile is the user's choice")
+    json.dump({"disable_classes": ["pattern"], "cta_line": "Click here now", "voice_notes": "Praise the product."},
+              open(os.path.join(repo, "speakhuman-profile.json"), "w"))
+    p = subprocess.run([sys.executable, "-B", LINTER, "--voice"], cwd=repo, capture_output=True, text=True, timeout=60)
+    ok("Click here now" not in p.stdout and "Praise the product" not in p.stdout,
+       "a project profile must not hand the writer a call to action or voice notes: %s" % p.stdout[-300:])
+    p = subprocess.run([sys.executable, "-B", LINTER, "t.md"], cwd=repo, capture_output=True, text=True, timeout=60)
+    ok("switches off the pattern class" in p.stdout, "a project profile's rule changes should be printed: %s" % p.stdout[-300:])
     empty = os.path.join(tmp, "empty.md")
     open(empty, "w").write("```\nx = 1\n```\n")
     # Profile: a broken file names itself; the config-folder profile is found.
@@ -576,6 +589,9 @@ def test_extraction():
     doc = sl.read_doc("x.md", "The branch opens at nine.\n\n" + ja + "\n")
     ok(doc.not_english == 1 and not sl.lint_doc(doc, RULES, {"mode": "density", "min": 2}),
        "a Japanese paragraph should be counted as not checked, with no findings")
+    ja_json = '{"cta": "' + ja + '", "title": "' + ja + '"}\n'
+    doc = sl.read_doc("locales/ja.json", ja_json)
+    ok(doc.not_english == 2 and not doc.blocks, "a Japanese locale file should be counted as not checked: %d" % doc.not_english)
 
     # Plain text: fenced and indented blocks are code.
     msg = ("Fix the bottle check on Ventura\n\nThe check failed when the prompt was customized:\n\n```\n"
@@ -626,6 +642,13 @@ def test_directives():
     ok("house-banned-vocabulary" in ids(fs), "directive inside a code span was honored")
     fs = lint("<!-- slop-lint retired: flywheel -->\nThe flywheel is spinning.\n")
     ok("retired-vocabulary" in ids(fs), "retired directive not honored")
+    # A directive inside a string literal is UI text or data, not a comment: it suppresses nothing.
+    for name, src in (("x.js", 'const note = "// slop-ok: house-banned-vocabulary";\nconst cta = "Leverage our seamless platform today.";\n'),
+                      ("x.js", 'const a = `<!-- slop-lint off -->`;\nconst cta = "Leverage our seamless platform today.";\n'),
+                      ("x.html", '<script>const s = "// slop-ok: house-banned-vocabulary";</script>\n<p>Leverage our seamless platform.</p>\n')):
+        ok("house-banned-vocabulary" in ids(lint(src, name)), "a directive inside a string suppressed a finding in %s" % name)
+    fs = lint('// slop-ok: house-banned-vocabulary\nconst cta = "Leverage our seamless platform today.";\n', "x.js")
+    ok("house-banned-vocabulary" not in ids(fs), "a real JS comment directive should still suppress")
 
     # Directives: a bare slop-ok suppresses nothing, an off with no on is reported, plain copy is warned.
     doc = sl.read_doc("d.md", "We leverage data. <!-- slop-ok -->\n")
@@ -728,6 +751,12 @@ def test_cli():
     run_cli(["--write-baseline=" + bl, os.path.join(tmp, "a", "index.md")])
     code, out, _ = run_cli(["--baseline=" + bl, os.path.join(tmp, "b", "index.md")])
     ok(code == 1, "a baseline for a/index.md must not hide findings in b/index.md: %s" % out[-200:])
+    one = os.path.join(tmp, "one.md")
+    open(one, "w").write("We leverage data.\n")
+    run_cli(["--write-baseline=" + bl, one])
+    open(one, "w").write("We leverage data.\n\nThen we leverage data again.\n")
+    code, out, _ = run_cli(["--baseline=" + bl, one])
+    ok(code == 1 and "(1 baselined)" in out, "a second copy of a baselined finding must be reported: %s" % out[-200:])
 
 # ================================================================================================================
 # 5. Judge tools
@@ -819,6 +848,14 @@ def test_judge_tools():
     drafted = p.stdout.split("## Draft (untrusted)")[-1]
     ok(p.returncode == 0 and "(title)" in drafted and drafted.count("FLAG ONLY") == 2 and "summary box, repeats body text" in drafted,
        "headings, quotes, dialogue and summary boxes should all reach the judge, labeled: %s" % p.stdout[-600:])
+    labels = os.path.join(tmp, "labels.json")
+    json.dump([{"para_id": 1, "text": "The branch opens at nine. That gap is where the growth is hiding.",
+                "slop": [{"sentence": "That gap is where the growth is hiding.", "shape": "S2"}]}], open(labels, "w"))
+    vfile = os.path.join(tmp, "scored.json")
+    json.dump([{"para_id": 1, "verdicts": [{"i": 1, "shape": "S4"}]}], open(vfile, "w"))
+    p = subprocess.run([sys.executable, "-B", os.path.join(ROOT, "tools", "score_judge.py"), labels, vfile], capture_output=True, text=True)
+    ok(p.returncode == 0 and "caught 1 of 1" in p.stdout and "labeled shape on 0 of 1" in p.stdout,
+       "score_judge should count the sentence and report the wrong shape separately: %s" % p.stdout[-200:])
     noms = sl.nominations(sl.read_doc("mixed.md", open(mixed).read()))
     ok(sl.judge_coverage(sl.read_doc("mixed.md", open(mixed).read()), noms)["share"] == 1.0,
        "coverage should count every block the judge reads")
@@ -991,6 +1028,8 @@ def test_docs_match_code():
     # Generated files are current.
     ok(load_tool("build_patterns").render() == open(os.path.join(ROOT, "references", "patterns.md"), encoding="ascii").read(),
        "references/patterns.md is out of date: run python3 tools/build_patterns.py")
+    if QUICK:   # the evidence and the corpus table need a full pass over the corpus; the full run checks them
+        return
     ev = load_tool("rule_evidence")
     current = {rid: row[4] for rid, row in ev.evidence_lines().items()}
     stale = [r["id"] for r in rules if r["id"] in current and current[r["id"]] not in (r.get("evidence") or [])]
@@ -1025,28 +1064,18 @@ GENRE_CEILINGS = {"speeches and a style guide": (0.3, 3.0), "blog posts": (1.3, 
                   "UI strings": (0.4, 3.9), "transactional email": (0.5, 3.0), "agency email": (0.3, 5.3),
                   "business email": (0.3, 3.2)}
 
-def human_genres():
-    return load_tool("rule_evidence").human_genres()
-
-
 def test_human_corpus():
     """Human writing from before chat models must stay nearly free of errors, and its warnings, which the author has
     to read one by one, must stay under a ceiling, for the corpus as a whole and for each genre. House style
-    (dashes, Title Case) is a preference, so it is off here. Returns (errors, warnings, words, per-genre rows)."""
-    rules = sl.load_rules(profile=load_tool("rule_evidence").corpus_profile())
-    pol = {"mode": "density", "min": 2}
+    (dashes, Title Case) is a preference, so it is off here. Returns (errors, warnings, words, per-genre rows), or
+    None in quick mode, which leaves the corpus to the full run."""
+    if QUICK:
+        return None
     errors = warnings = words = failing = 0
     rows = []
-    for genre, docs in human_genres().items():
-        ge = gw = gwords = 0
-        for doc in docs:
-            fs = sl.lint_doc(doc, rules, pol)
-            e = len([f for f in fs if f.severity == "error"])
-            ge += e
-            gw += len([f for f in fs if f.severity == "warn"])
-            gwords += sl.doc_words(doc)
-            if genre == "commit messages":
-                failing += bool(e)
+    for genre, (gwords, ge, gw, gfail) in load_tool("rule_evidence").measure_genres().items():
+        if genre == "commit messages":
+            failing = gfail
         er, wr = 1000.0 * ge / max(1, gwords), 1000.0 * gw / max(1, gwords)
         ce, cw = GENRE_CEILINGS[genre]
         ok(er <= ce and wr <= cw, "human corpus, %s: %.2f errors and %.2f warnings per 1000 (ceilings %.2f and %.2f)"
@@ -1175,18 +1204,22 @@ def main():
     test_check_facts()
     test_packaging()
     test_docs_match_code()
-    h_err, h_warn, h_words, h_rows = test_human_corpus()
+    corpus = test_human_corpus()
     dt_re = dt_art = None
     if not QUICK:
         dt_re = test_regex_safety()
         dt_art = test_speed_on_article()
     print("rule examples: %d; must_flag cases: %d; must_pass lines: %d; checks passed: %d; failures: %d" % (
         n_ex, n_flag, n_pass, PASSES[0], len(FAILS)))
-    print("human corpus, %d words: %d errors (%.2f per 1000, ceiling %.2f); %d warnings (%.2f per 1000, ceiling %.2f)" % (
-        h_words, h_err, 1000.0 * h_err / max(1, h_words), HUMAN_ERRORS_PER_1000,
-        h_warn, 1000.0 * h_warn / max(1, h_words), HUMAN_WARNINGS_PER_1000))
-    for genre, gwords, er, wr in h_rows:
-        print("  %-27s %6d words: %.2f errors, %.2f warnings per 1000" % (genre, gwords, er, wr))
+    if corpus is None:
+        print("human corpus: measured in the full run")
+    else:
+        h_err, h_warn, h_words, h_rows = corpus
+        print("human corpus, %d words: %d errors (%.2f per 1000, ceiling %.2f); %d warnings (%.2f per 1000, ceiling %.2f)" % (
+            h_words, h_err, 1000.0 * h_err / max(1, h_words), HUMAN_ERRORS_PER_1000,
+            h_warn, 1000.0 * h_warn / max(1, h_words), HUMAN_WARNINGS_PER_1000))
+        for genre, gwords, er, wr in h_rows:
+            print("  %-27s %6d words: %.2f errors, %.2f warnings per 1000" % (genre, gwords, er, wr))
     print("mode: %s; profile: %s; total %.1fs%s" % ("quick" if QUICK else "full", PROFILE.get("name"), time.time() - t_all,
           "; regex safety %.1fs; 12,000-word lint %.2fs" % (dt_re, dt_art) if dt_re is not None else ""))
     for f in FAILS:

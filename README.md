@@ -24,7 +24,7 @@ Ask Claude "set up my SpeakHuman profile" and answer the questions, or copy `spe
 
 Keep your profile outside the skill folders so an update never overwrites it:
 
-- Claude Code: `~/.config/speakhuman/profile.json`, or `speakhuman-profile.json` in a project for that project only. A project profile tunes rules; it cannot switch on regular expressions or supply a voice file unless you pass it with `--profile`.
+- Claude Code: `~/.config/speakhuman/profile.json`, or `speakhuman-profile.json` in a project for that project only. A project profile tunes rules, and the summary lists every rule it switches off. It cannot switch on regular expressions or supply a voice file, voice notes or a call to action unless you pass it with `--profile`.
 - claude.ai and Cowork: build the core zip with your profile (and its voice file) inside it, and upload that zip: `python3 scripts/build_zips.py --profile=path/to/profile.json --out=personal-dist`. Use `--out` so the personal core zip does not replace the shareable one in `dist/`. The bundle zip always carries the default profile, and the build stops if `speakhuman-core/profile.json` itself holds personal settings, so yours is never shared by accident.
 
 The most useful part of a profile is the voice file (`voice_file`): a markdown file of lines you rejected, what you said about them, and what you wanted instead, plus a passage or two you like. Claude reads it before every draft and follows it over the default rules. `speakhuman-core/references/profile-guide.md` shows a layout. When you reject a phrase, tell Claude to add it to `rejected_phrases`; when you reject a move or say what you wanted instead, tell Claude to add a ruling to your voice file.
@@ -49,7 +49,7 @@ A skill loads when a task matches it, so it cannot reliably shape every chat rep
 python3 speakhuman-core/tests/run_tests.py
 ```
 
-Expected: 0 failures, then the error and warning rates on the human corpus, overall and for each genre. `--quick` skips the slower command-line and timing checks and finishes in about a second.
+Expected: 0 failures, then the error and warning rates on the human corpus, overall and for each genre. `--quick` skips the command-line runs, the corpus and the timing checks and finishes in about a second. GitHub runs the full suite on Python 3.9 and 3.13 for every push.
 
 ## What to expect
 

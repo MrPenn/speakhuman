@@ -10,7 +10,7 @@ Three skills that keep AI-sounding writing out of what Claude writes for you.
 
 Claude Code: copy the three `speakhuman-*` folders into `~/.claude/skills/`.
 
-Claude chat or Cowork: upload `speakhuman-short.zip`, `speakhuman-long.zip` and `speakhuman-core.zip` under Settings, Capabilities, Skills. If you only have this folder, build them first:
+Claude chat or Cowork: download the zips from the [Releases page](https://github.com/MrPenn/speakhuman/releases) and upload `speakhuman-short.zip`, `speakhuman-long.zip` and `speakhuman-core.zip` under Settings, Capabilities, Skills. If you only have this folder, build them first:
 
 ```bash
 python3 scripts/build_zips.py

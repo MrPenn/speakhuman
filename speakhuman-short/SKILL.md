@@ -1,6 +1,6 @@
 ---
 name: speakhuman-short
-description: "SpeakHuman for short pieces: keeps AI-sounding writing out of emails, commit and PR text, Slack and LinkedIn posts, UI strings, error messages, button labels and short web copy. Checks English. Use it whenever you write or edit any of those for the user, and whenever they say slop, AI-sounding, throwaway, melodramatic or 'not how I talk'. For articles and anything over about 800 words use speakhuman-long. Claude's own conversational replies are covered by the reply rules in CLAUDE.md or personal preferences, not by this skill."
+description: "Keeps AI-sounding writing out of short text: emails, commit and PR text, posts, UI strings, web copy. Use when writing or editing these, or when the user says slop. Over 800 words: speakhuman-long."
 ---
 
 # SpeakHuman, short form

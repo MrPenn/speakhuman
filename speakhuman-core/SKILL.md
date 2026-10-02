@@ -1,6 +1,6 @@
 ---
 name: speakhuman-core
-description: "Engine, rule set and personal profile for the SpeakHuman skills: speakhuman_lint.py (a stdlib linter for English in markdown, HTML, JS/TS/JSX strings, locale JSON and stdin), 131 rules, the judge-pass and fact-check tools, and profile.json for your own bans, words and voice. Use it to set up or edit the profile, run the linter, add a rule, or when speakhuman-short or speakhuman-long tells you to lint a draft."
+description: "Linter, rules, judge and fact-check tools, and personal profile behind speakhuman-short and speakhuman-long. Use to lint a draft, set up or edit the profile, or add a rule."
 ---
 
 # SpeakHuman core

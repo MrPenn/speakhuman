@@ -1025,6 +1025,15 @@ def test_docs_match_code():
     # Every tool is listed in the core skill.
     for tool in sorted(f for f in os.listdir(os.path.join(ROOT, "tools")) if f.endswith(".py")):
         ok("`tools/%s`" % tool in core, "speakhuman-core/SKILL.md does not list tools/%s" % tool)
+    # Each skill's frontmatter fits the smallest upload limit: claude.ai takes a description of 200 characters at most.
+    for skill in ("speakhuman-short", "speakhuman-long", "speakhuman-core"):
+        head = read(skill + "/SKILL.md").split("\n---\n", 1)[0]
+        name = re.search(r"(?m)^name: (.*)$", head)
+        desc = re.search(r'(?m)^description: "(.*)"$', head)
+        ok(name and name.group(1) == skill, "%s/SKILL.md should be named %s" % (skill, skill))
+        ok(desc and 0 < len(desc.group(1)) <= 200 and not re.search(r"[<>]", desc.group(1)),
+           "%s/SKILL.md needs a description of 1 to 200 characters with no angle brackets (it has %d)"
+           % (skill, len(desc.group(1)) if desc else 0))
     # Generated files are current.
     ok(load_tool("build_patterns").render() == open(os.path.join(ROOT, "references", "patterns.md"), encoding="ascii").read(),
        "references/patterns.md is out of date: run python3 tools/build_patterns.py")

@@ -1,6 +1,6 @@
 ---
 name: speakhuman-long
-description: "SpeakHuman for long pieces: keeps AI-sounding writing out of articles, essays, newsletters, reports, white papers, long emails and website pages over about 800 words. Runs an outline-first process, a mechanical pass with the SpeakHuman linter, a judge pass by a second reader, and a human review checklist for what the linter can only nominate. Checks English. Use it whenever you draft, edit or critique a long piece for the user, and whenever they say slop, AI-sounding, stapled-on, throwaway or word salad. For short emails, posts, commit text and UI strings use speakhuman-short."
+description: "Keeps AI-sounding writing out of English pieces over about 800 words: articles, essays, newsletters, reports, web pages. Use when drafting, editing or critiquing one, or when the user says slop."
 ---
 
 # SpeakHuman, long form

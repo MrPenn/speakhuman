@@ -1,0 +1,168 @@
+[
+ {
+  "para_id": 1,
+  "topic": "bookbinding",
+  "position": "opener",
+  "text": "Coptic stitch binding dates to roughly the second century, when Egyptian Christians sewed folded sheets of papyrus directly to wooden boards. A book is a machine for holding time still. The thread passes through each signature at the spine, locks to its neighbor with a chain-like knot, and lets the book open flat to 180 degrees. Modern hobbyists use waxed linen thread in 18/3 weight and a curved needle about 5 cm long. It is not just a craft, it is a conversation with every reader who will ever turn the page. That is why the oldest techniques still matter.",
+  "slop": [
+   {
+    "sentence": "A book is a machine for holding time still.",
+    "shape": "stock metaphor asserted as definition"
+   },
+   {
+    "sentence": "It is not just a craft, it is a conversation with every reader who will ever turn the page.",
+    "shape": "X is not Y, it is Z"
+   },
+   {
+    "sentence": "That is why the oldest techniques still matter.",
+    "shape": "announced significance"
+   }
+  ]
+ },
+ {
+  "para_id": 2,
+  "topic": "lichen biology",
+  "position": "opener",
+  "text": "In 1867 the Swiss botanist Simon Schwendener proposed that lichens were a partnership between a fungus and an alga, and many colleagues dismissed the idea as absurd. Nature, it turns out, loves a collaboration. Today we know that many lichens also host a yeast, first reported in 2016 by Toby Spribille and his team in Montana. The rock outside your window is quietly alive, and what looks like stillness is really a slow negotiation. Some crustose species grow less than a millimeter a year, so a patch the size of a dinner plate can be older than the Roman Empire.",
+  "slop": [
+   {
+    "sentence": "Nature, it turns out, loves a collaboration.",
+    "shape": "personified abstraction / portable truism"
+   },
+   {
+    "sentence": "The rock outside your window is quietly alive, and what looks like stillness is really a slow negotiation.",
+    "shape": "stock metaphor / reframe"
+   }
+  ]
+ },
+ {
+  "para_id": 3,
+  "topic": "curling",
+  "position": "middle",
+  "text": "A curling stone weighs between 17.24 and 19.96 kg, and a good delivery leaves the hand at roughly 1.5 meters per second. Sweeping works by warming the pebble, the tiny water droplets sprayed on the ice, so the stone glides farther and curls less. So what is a sweeper really doing? She is not just brushing ice, she is carrying the team's confidence on the end of a broom. The skip calls the line and the weight, and the sweepers have about 25 seconds to make that call come true. In curling, as in life, small efforts add up.",
+  "slop": [
+   {
+    "sentence": "So what is a sweeper really doing?",
+    "shape": "rhetorical question setup"
+   },
+   {
+    "sentence": "She is not just brushing ice, she is carrying the team's confidence on the end of a broom.",
+    "shape": "X is not Y, it is Z"
+   },
+   {
+    "sentence": "In curling, as in life, small efforts add up.",
+    "shape": "stock adage"
+   }
+  ]
+ },
+ {
+  "para_id": 4,
+  "topic": "small claims court",
+  "position": "middle",
+  "text": "Most states cap small claims at somewhere between $5,000 and $15,000, and Cook County, Illinois sets its limit at $10,000. Filing fees there run from about $75 to $289 depending on the amount you are claiming, so check the clerk's current schedule before you go. You file a complaint at the Daley Center or at a suburban district courthouse, then pay the sheriff or a private process server to deliver the summons. The defendant must be served before the first court date, and the server has to file proof of service with the clerk. If the defendant does not appear, you can ask the judge for a default judgment, but you still need to bring your receipts, contracts, and photographs.",
+  "slop": []
+ },
+ {
+  "para_id": 5,
+  "topic": "Great Molasses Flood",
+  "position": "middle",
+  "text": "The tank at 529 Commercial Street in Boston held about 2.3 million gallons of molasses when it failed at 12:30 p.m. on January 15, 1919. A wave roughly 8 feet high moved through the North End at around 35 miles per hour, killing 21 people and injuring about 150. Disaster rarely announces itself in advance. The tank had leaked since it was built, and the company's response was to paint it brown so the drips would be less noticeable. The auditor appointed to hear the case sat through nearly three years of testimony, and US Industrial Alcohol argued that anarchists had blown up the tank. The ruling that followed would reshape American industry for generations.",
+  "slop": [
+   {
+    "sentence": "Disaster rarely announces itself in advance.",
+    "shape": "portable truism"
+   },
+   {
+    "sentence": "The ruling that followed would reshape American industry for generations.",
+    "shape": "announced significance"
+   }
+  ]
+ },
+ {
+  "para_id": 6,
+  "topic": "hand coffee grinder review",
+  "position": "middle",
+  "text": "After six weeks with the Timemore C3, I can report that it grinds 20 grams of beans in about 55 seconds at a pour-over setting. The steel burrs produce a fairly even particle size, with fewer fines than the blade grinder it replaced. Think of a good grinder as the foundation of a house: everything you build on top depends on it. At $79 it sits comfortably in the sweet spot between budget and premium. The handle wobbles slightly on the shaft, which bothered me more than I expected. Ultimately, the best grinder is the one you actually use every morning.",
+  "slop": [
+   {
+    "sentence": "Think of a good grinder as the foundation of a house: everything you build on top depends on it.",
+    "shape": "stock metaphor asserted as definition"
+   },
+   {
+    "sentence": "At $79 it sits comfortably in the sweet spot between budget and premium.",
+    "shape": "stock phrase / filler positioning"
+   },
+   {
+    "sentence": "Ultimately, the best grinder is the one you actually use every morning.",
+    "shape": "clever closing truism"
+   }
+  ]
+ },
+ {
+  "para_id": 7,
+  "topic": "sharpening a knife on whetstones",
+  "position": "middle",
+  "text": "Start with a 1000-grit whetstone and soak it for ten minutes, until the bubbles stop rising. Hold the knife at about 15 degrees, which is roughly the height of two stacked quarters under the spine. Sharpening is a dance between patience and pressure. Push the edge across the stone in overlapping strokes, ten per side, then check for a burr by dragging your thumb gently away from the edge. Remember that a dull knife is more dangerous than a sharp one. Do you really need a 6000-grit finishing stone? For most home cooks the answer is no, and a leather strop gets you most of the way there.",
+  "slop": [
+   {
+    "sentence": "Sharpening is a dance between patience and pressure.",
+    "shape": "stock metaphor"
+   },
+   {
+    "sentence": "Remember that a dull knife is more dangerous than a sharp one.",
+    "shape": "stock adage"
+   },
+   {
+    "sentence": "Do you really need a 6000-grit finishing stone?",
+    "shape": "rhetorical question setup"
+   }
+  ]
+ },
+ {
+  "para_id": 8,
+  "topic": "Faroe Islands travel",
+  "position": "closer",
+  "text": "On the last morning I took the 7:15 ferry from Torshavn to Nolsoy, a 20-minute crossing that costs about 45 kroner. Puffin burrows pocked the cliff above the village, and a man named Jakup sold me coffee from his kitchen window. I left with a sunburn, a bag of dried fish, and a head full of fog. The Faroes taught me that the journey matters more than the destination. Some places do not ask you to visit; they ask you to listen. I plan to go back in June, when the nights barely get dark.",
+  "slop": [
+   {
+    "sentence": "I left with a sunburn, a bag of dried fish, and a head full of fog.",
+    "shape": "tidy triad"
+   },
+   {
+    "sentence": "The Faroes taught me that the journey matters more than the destination.",
+    "shape": "stock adage"
+   },
+   {
+    "sentence": "Some places do not ask you to visit; they ask you to listen.",
+    "shape": "contrast form / personified place"
+   }
+  ]
+ },
+ {
+  "para_id": 9,
+  "topic": "beekeeping winter prep",
+  "position": "closer",
+  "text": "Before the first hard frost I reduce each entrance to a 3/8 inch opening to keep mice out, and I tilt the hive forward slightly so condensation runs out the front. Each colony in my zone 5 yard needs at least 60 pounds of honey to get through to spring. I check once in January by lifting the back of the hive to judge its weight, and I do not open it. If a hive feels light, I lay a block of fondant on the top bars and close it up again within a minute. In March I look for a cluster near the top and for bees flying on the first 50 degree afternoon.",
+  "slop": []
+ },
+ {
+  "para_id": 10,
+  "topic": "CPAP and sleep apnea",
+  "position": "middle",
+  "text": "Obstructive sleep apnea affects an estimated 30 million adults in the United States, though most are never diagnosed. A CPAP machine delivers air at a pressure of 4 to 20 cm of water, enough to keep the soft tissue at the back of the throat from collapsing. Sleep is the foundation upon which every other part of health is built. Yet many patients quit within the first three months, usually because of mask leaks or dry nasal passages. Adherence, then, is the real battleground. A humidifier and a mask that actually fits can make all the difference.",
+  "slop": [
+   {
+    "sentence": "Sleep is the foundation upon which every other part of health is built.",
+    "shape": "portable truism / stock metaphor"
+   },
+   {
+    "sentence": "Adherence, then, is the real battleground.",
+    "shape": "stock metaphor"
+   },
+   {
+    "sentence": "A humidifier and a mask that actually fits can make all the difference.",
+    "shape": "stock adage"
+   }
+  ]
+ }
+]

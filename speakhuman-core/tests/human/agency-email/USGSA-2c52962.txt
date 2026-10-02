@@ -1,0 +1,49 @@
+Subject: CORRECTED: SAM Helping to “Slam the Scam”
+
+March 4, 2021 is the second annual National “Slam the Scam” Day, part of National Consumer Protection Week. Federal government agencies use National “Slam the Scam” Day to raise awareness about known scams and fraudulent schemes.
+
+In conjunction with National “Slam the Scam” Day, we are sharing information about three fraud schemes which target vendors registered in the System for Award Management (SAM). These scams use public information to defraud those interested in doing business with the U.S. Government.
+
+Beware of scammers:
+
+Sending fake quote requests and fake purchase orders. Scammers can gather public information from legitimate sources, combine it to make a fake document, and then send it to vendors registered in SAM pretending to be government procurement officials.
+
+Pretending to be government contractors. Scammers can submit fake purchase orders to vendors registered in SAM claiming to be fulfilling a government order and promising payment after they (the fake government contractor) are reimbursed by the government.
+
+Pretending to be procurement officials from government agencies, universities, or hospitals. Scammers pretending to represent colleges, universities, or hospitals can send fake purchase orders to vendors registered in SAM and direct delivery to an address not affiliated with the real organization.
+
+How can you recognize these procurement scams? Remember, scammers often:
+
+Use email addresses designed to trick you. They create fake email addresses which are similar to the legitimate government, university, or hospital email addresses. They could also display a different email address in the “From” header than what they use for the “Reply-To” email address.
+
+Try to direct shipping to locations not connected to the organization they are impersonating.
+
+Send email messages which are poorly written, with misspellings and awkward sentence structure.
+
+Try to make the fake RFQs and POs appear legitimate. Some have reportedly contained names and contact information of actual procurement officials, logos, or seals.
+
+Try to order things they can easily resell. These items include computers and related equipment, printer toner, projectors/cameras, medical and pharmaceutical equipment, and industrial equipment.
+
+Play to your sense of urgency. They may try to order large quantities of product and rush you to ship priority or overnight.
+
+How can you SLAM the scam?
+
+Review any unsolicited request for quote (RFQ) or purchase order (PO) carefully.
+
+Locate the phone number for the listed procurement official using an independent source. Call them to make sure the RFQ or PO is legitimate.
+
+Check the email address. Make sure the sender’s domain and the “Reply To” header is the correct domain affiliated with the government agency, college, or hospital.You can also hover over the email address in the “From” header without clicking on it to confirm whether it matches the valid domain.
+
+Search the Internet for the listed delivery address. See if your search returns an address actually affiliated with the agency, university, or hospital. Beware of those addresses that return an individual residence, self-storage facility, virtual office, or shipping and packing store.
+
+Beware of any purported procurement officials who refuse to communicate by telephone.
+
+Research the company’s website and contact information and compare it to any unsolicited RFQs or POs received from purported government contractors. Look for anomalies. Also, research the original RFQ and award information between the company and the government and attempt to confirm the authenticity of the RFQ with the procurement official.
+
+Taking these steps can stop scammers from defrauding your company. The extra vigilance is worth the effort. Let’s get the word out and help slam the scam!
+
+Fraud Reporting
+
+If you believe you have been victimized by one of these procurement scams, report the incident immediately to the FBI’s Internet Crime Complaint Center at https://www.ic3.gov/default.aspx.
+
+If the scam involved the impersonation of a government agency or official, also report it to that agency’s Office of Inspector General. Go to https://www.oversight.gov/whistleblower for a list of agency Office of Inspector General Hotlines.

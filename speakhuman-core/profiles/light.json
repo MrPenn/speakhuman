@@ -1,0 +1,39 @@
+{
+  "name": "light",
+  "_help": "For casual writing: typography is allowed, and the judgment rules (stingers, metaphors, rule of three) are information only. Mechanical tells such as chatbot wrappers and house words stay as errors.",
+  "ascii_only": false,
+  "disable_rules": [
+    "dash-clause",
+    "title-case-headings",
+    "passive-voice",
+    "exclamation-point"
+  ],
+  "enable_rules": [],
+  "severity_overrides": {
+    "closer-without-fact": "info",
+    "echo-stinger": "info",
+    "metaphor-definition": "info",
+    "reframe-pair": "info",
+    "locative-payoff-closer": "info",
+    "manufactured-rule-of-three": "info",
+    "aphoristic-capper": "info",
+    "standalone-aphorism": "info"
+  },
+  "extra_banned_words": [],
+  "allowed_words": [],
+  "rejected_phrases": [],
+  "retired_terms": [],
+  "short_closers_allowed": 6,
+  "cta_line": "",
+  "voice_notes": "",
+  "voice_file": "",
+  "disable_classes": [
+    "house_style"
+  ],
+  "device_policy": "density",
+  "device_min": 3,
+  "allow_regex": false,
+  "device_scope": "piece",
+  "fact_check_fail_on": "added",
+  "fail_on_warnings": false
+}

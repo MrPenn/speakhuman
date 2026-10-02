@@ -1,0 +1,59 @@
+Subject: Latest Privacy-Protected Demonstration Data and Metrics
+
+Latest Privacy-Protected Demonstration Data and Metrics
+
+Two new resources are now available to accompany the Privacy-Protected Microdata File (PPMF) (v. 2020-09-17) we posted last week:
+
+New Privacy-Protected 2010 Census Demonstration Data produced and posted by the IPUMS National Historical Geographic Information System (NHGIS), and
+
+New Detailed Summary Metrics that incorporate a suite of new measures that we have added in response to feedback from our data users. These additions include metrics for additional geographic areas, expanded error and outlier measures, and more use case-specific metrics. Full details are available in the overview document.
+
+These resources are a direct response to your requests for more flexible DAS evaluation tools.
+
+We are grateful to NHGIS, who, as members of the CNSTAT expert group, volunteered to produce the demonstration data files so the data user community could more easily evaluate progress and improvements in Disclosure Avoidance System (DAS) development.
+
+Learn More
+
+As noted previously, the Census Bureau is applying all of its resources to attempt to meet the legal deadline for producing an apportionment count that is complete and accurate.
+
+After we solidify our plans to accomplish this goal, we will turn our attention to identifying the activities and schedules needed for producing and delivering accurate and complete redistricting (P.L. 94-171) data to the states, the District of Columbia and Puerto Rico as expeditiously as we can.
+
+This includes finalizing the implementation of the new Disclosure Avoidance System (DAS). Planning for the production and release of the remaining 2020 Census data products will restart immediately following completion of the apportionment and redistricting data planning activities.
+
+Upcoming Policy Decisions
+
+We encourage our data users to evaluate these new demonstration data and detailed summary metrics. Your feedback will help us continue our efforts to improve the 2020 DAS and to inform upcoming policy decisions about the DAS system and parameters for the redistricting data -- the first of the 2020 Census data products protected by the 2020 DAS.
+
+Note that to provide additional time for your analysis and feedback for these decisions, we have postponed the upcoming meeting of the Data Stewardship Executive Policy Committee (DSEP) on invariants and system architecture until October 8. We will also release another set of PPMFs in advance of the December 2020 DSEP meeting that will set the privacy-loss budget.
+
+The statistics included in this newsletter have been cleared for public dissemination by the Census Bureau’s Disclosure Review Board (CBDRB-FY20-DSEP-001).
+
+Was this forwarded to you?
+
+Sign up to receive your own copy!
+
+Sign Up!
+
+Useful Links:
+
+IPUMS NHGIS Privacy-Protected Census Demonstration Data (v. 20200917)
+
+DAS Updates
+
+Progress Metrics and Data Runs
+
+Newsletter Archives
+
+All DAS FAQs
+
+Have Suggestions?
+
+Do you have specific questions you'd like us to answer in this newsletter, or topics you'd like discussed? Send us an email at 2020DAS@census.gov and let us know!
+
+Contact Us
+
+About Disclosure Avoidance Modernization
+
+The Census Bureau is protecting 2020 Census data products with a powerful new cryptography-based disclosure avoidance system known as “differential privacy.” We are committed to producing 2020 Census data products that are of the same high quality you've come to expect while protecting respondent confidentiality from emerging privacy threats in today's digital world.
+
+Share This

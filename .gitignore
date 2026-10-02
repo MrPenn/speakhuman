@@ -1,0 +1,14 @@
+# Build output: rebuild with python3 scripts/build_zips.py
+dist/
+personal-dist/
+
+# Python and macOS
+__pycache__/
+*.pyc
+.DS_Store
+
+# Kept on the maintainer's machine only (see speakhuman-core/tests/human/README.md)
+speakhuman-core/tests/human/enron-sent-mail.json
+
+# Working notes
+docs/

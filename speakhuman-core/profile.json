@@ -1,0 +1,22 @@
+{
+  "name": "default",
+  "ascii_only": false,
+  "disable_rules": [],
+  "enable_rules": [],
+  "severity_overrides": {},
+  "extra_banned_words": [],
+  "allowed_words": [],
+  "rejected_phrases": [],
+  "retired_terms": [],
+  "short_closers_allowed": 3,
+  "cta_line": "",
+  "voice_notes": "",
+  "voice_file": "",
+  "disable_classes": [],
+  "device_policy": "density",
+  "device_min": 2,
+  "allow_regex": false,
+  "device_scope": "piece",
+  "fact_check_fail_on": "added",
+  "fail_on_warnings": false
+}

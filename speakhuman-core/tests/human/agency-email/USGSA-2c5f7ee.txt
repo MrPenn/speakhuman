@@ -1,0 +1,37 @@
+Subject: Learn more about OES behavioral maps, intervention packs, and evaluation designs
+
+Behavioral mapping
+
+Have you ever wondered how our team at the Office of Evaluation Sciences (OES) designs its interventions? Many of our projects create “behavioral maps” to visually depict an individual’s interaction with a program or service. Mapping out an individual’s behavioral journey allows OES and our agency collaborators to identify behavioral barriers and intervention opportunities.
+
+While government travel might be on hold right now, OES worked with GSA to develop a behavioral map, detailing potential interventions to encourage earlier booking and generate government-wide cost savings when travel does start up again.
+
+View larger
+
+Evaluation and Evidence Training Series
+
+Cost Analysis in Evaluation
+
+Tuesday, April 6th from 2:00 to 3:30 pm ET. Open to federal executive branch employees only. Register on MAX.gov.
+
+Join OES and the OMB Evidence Team for an introduction to cost analysis: discuss the types of cost analysis used in evaluation and highlight how answering cost questions can inform policies and programs.
+
+OES publishes intervention packs to share designed program changes
+
+The OES team has recently published actual interventions, annotated to highlight behavioral insights, to allow our audiences to interact with our materials for some OES projects. We are calling these “intervention packs.”
+
+Review our intervention packs. And, check out the redesigned notices we developed with the Social Security Administration and the Centers for Medicare & Medicaid Services, and the behavioral insights incorporated:
+
+To inform Social Security spousal benefit recipients that they might receive a higher benefit if they applied for retirement benefits on their own record.
+
+To encourage Low-Income Subsidy beneficiaries to make an active choice to switch Medicare prescription drug plans.
+
+To inform potentially-eligible individuals about low-income Medicare programs.
+
+Evaluating the effects of HEERF aid to students
+
+OES has expanded our work to assist agencies in designing evaluations. The Higher Education Emergency Relief Fund (HEERF), created as part of the Coronavirus Aid, Relief, and Economic Security Act (CARES Act) signed into law on March 27, 2020, authorized the Department of Education (ED) to provide $14 billion for institutions of higher education (IHEs).
+
+OES designed an impact evaluation using a regression discontinuity (RD) design—a type of quasi-experimental method—to help ED and IHEs answer the question: What is the effect of providing HEERF aid on short- and medium-term student outcomes? OES identified that many institutions used strict eligibility cutoffs that lend themselves to an RD design that can be applied with many IHEs.
+
+The RD design can provide evidence of the effect of one-time emergency aid on student outcomes. Evaluations using an RD design can indicate how much emergency aid programs change student outcomes. Building robust evidence may benefit from coordinated evaluations with multiple IHEs. Read the full report here and read more about our higher education portfolio here.

@@ -1,0 +1,59 @@
+Subject: Now Available: On-Demand Webinar–Single-Circuit Meter
+
+GSA OUTBRIEF 23
+
+Submetering & Analytics: Single-Circuit Meter
+
+If you missed our last Outbrief webinar #23, “Submetering & Analytics: Single-Circuit Meter,” a recording and presentation slides are now available.
+
+Many thanks to all the presenters and to the participants for their thoughtful questions, some of which are answered here:
+
+Q: What was it specifically that made the installation of these meters easier/faster? Anything beyond the box build?
+
+A: Installation is streamlined by eliminating programming: the gateways automatically find the meters. For reference, the revenue-grade meters that were mounted alongside the single-circuit meters took 3 times as long to install.
+
+Q: What happens when the internet is unavailable? Does the data continue to record locally on the gateway?
+
+A: Yes—at least 2 months of data is stored on the gateway and is transmitted when the internet is available again. The meter stores 3 weeks of data.
+
+Q: What is revenue-grade accuracy and do these meters match that accuracy?
+
+A: The American National Standards Institute (ANSI) defines revenue-grade accuracy as +/- 2%. In general, the single-circuit meter matched that accuracy. The average error in energy measurement was <2%, except when chillers were online but idling. The manufacturer states that a new meter design combined with high accuracy CTs should mitigate measurement errors for low-power loads.
+
+Q: What calibration schedule is recommended?
+
+A: No calibration is necessary. However, it is important to right-size CTs and transformers.
+
+Q: For high voltages (480V), can the CTs be installed without a shutdown?
+
+A: Yes.
+
+Q: It was mentioned that these submeters monitor lighting and plug loads. Can they also monitor receptacle loads, including Automatic Receptacle Controls per ASHRAE 90.1?
+
+A: Submeters can monitor lighting and plug loads, though this was not part of the evaluation. The best-use case for the single-circuit meter is either a single large piece of equipment or a panel mains.
+
+Q: Sometimes other devices, such as flow meters or temperature sensors, are required for measurement and verification of energy conservation measures. Can the same gateway transmit data from other devices?
+
+A: The gateway can get data from other Zigbee devices, so, if 3rd-party devices use Zigbee protocol, they should be able to be integrated into the gateway.
+
+Q: Can data such as power factors, frequencies, and reactive power be collected with these submeters?
+
+A: Yes, the single-circuit meter measures current, voltage, power factor, frequency, power, and reactive power. It also measures harmonics up to the 45th order.
+
+Q: Can the meters perform trending analysis and produce reports?
+
+A: Analysis and trending reports are available through a software as a subscription service (SaaS). Data can also be integrated into GSALink.
+
+Q: Is the Single-Circuit Submeter available for wider adoption and roll-out?
+
+A: GPG evaluated the field performance of two single-circuit submeters, the Meazon DinRail ULTRA 3-Ph meter, and the Centrica Pan-42 meter. Researchers at the National Renewable Energy Laboratory found that both meters measured energy use with similar degrees of accuracy. For more information on these meters, please contact John Gionas, j.gionas@meazon.com or Stelios Koutroubinas, s.koutroubinas@meazon.com at Meazon and Laura Heon, laura.heon@centrica.com at Centrica.
+
+Reference to any specific commercial product, process or service does not constitute or imply its endorsement, recommendation or favoring by the United States Government or any agency thereof.
+
+Webinar Links
+
+Webinar recording
+
+Presentation Slides
+
+Emerging Building Technologies’ two programs, GSA Proving Ground (GPG) and Pilot to Portfolio (P2P), enable GSA to make sound investment decisions in next-generation building technologies based on their real-world performance. www.gsa.gov/gpg

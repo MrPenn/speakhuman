@@ -1,0 +1,23 @@
+{
+  "name": "strict",
+  "_help": "Everything on, every rhetorical device flagged, two short closers allowed, any warning fails the run, and the fact check fails on a dropped fact as well as an added one. Severities stay as they are, so the judgment rules remain warnings. Good for published articles and site copy.",
+  "ascii_only": true,
+  "disable_rules": [],
+  "enable_rules": [],
+  "severity_overrides": {},
+  "extra_banned_words": [],
+  "allowed_words": [],
+  "rejected_phrases": [],
+  "retired_terms": [],
+  "short_closers_allowed": 2,
+  "cta_line": "",
+  "voice_notes": "",
+  "voice_file": "",
+  "disable_classes": [],
+  "device_policy": "ban",
+  "device_min": 2,
+  "allow_regex": false,
+  "device_scope": "piece",
+  "fact_check_fail_on": "added_or_dropped",
+  "fail_on_warnings": true
+}

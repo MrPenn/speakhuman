@@ -14,6 +14,9 @@
     --write-baseline=FILE    write current findings to FILE and exit 0
     --dest=markdown|plain    how to read stdin and .md/.txt input (plain = email,
                              LinkedIn, commit message: markdown syntax is a finding)
+    --topic=FILE             the question or brief the piece answers. The vocabulary rules
+                             skip a word it uses ("holistic" in an answer about holistic
+                             health), and the summary lists every finding skipped this way
     --profile=FILE           personal settings (JSON). Default search order: --profile,
                              $SPEAKHUMAN_PROFILE, ./speakhuman-profile.json,
                              ~/.config/speakhuman/profile.json, profile.json beside this file
@@ -409,6 +412,7 @@ class Doc:
         # directives: (line, offset, "ok" | "off" | "on", rule ids); suppressed: rule id -> findings hidden
         self.directives, self.suppressed, self.off_lines, self.off_unclosed = [], {}, 0, None
         self.not_english = 0
+        self.topic_skipped = {}   # matched text -> findings the vocabulary rules skipped as the topic's own words
         # comments: (start, end) of every comment the parsers passed, the only places a directive counts
         self.comments, self.in_literal = [], 0
         self.line_starts = [0] + [m.end() for m in re.finditer(r"\n", src)]
@@ -2333,6 +2337,22 @@ def allowed_hit(match, words):
     return False
 
 
+TOPIC_MIN_LETTERS = 4
+
+
+def topic_words(text):
+    """The words of a question or brief, for --topic: four letters or longer, lowercased, each once. Short words
+    are left out, so a brief that says "in order to" does not clear the filler phrase."""
+    return sorted({w for w in re.findall(r"[a-z][a-z'-]*[a-z]", text.lower()) if len(w) >= TOPIC_MIN_LETTERS})
+
+
+def topic_hit(match, words):
+    """True when every word of the matched text is a topic word, in any common form either way: 'utilization' in
+    the question covers 'utilization', 'holistic' covers 'holistically', and 'robustness' covers 'robust'."""
+    toks = re.findall(r"[a-z][a-z']*", match.lower())
+    return bool(toks) and all(allowed_hit(t, words) or any(allowed_hit(w, [t]) for w in words) for t in toks)
+
+
 ENGINE = {"fragment-run": chk_fragment_run, "anaphora": chk_anaphora, "option-overload": chk_option_overload,
           "content-duplication": chk_duplication, "broetry": chk_broetry, "sentence-length-cv": chk_sentence_cv,
           "paragraph-shape-cv": chk_paragraph_cv, "short-closers": chk_short_closers,
@@ -2347,9 +2367,10 @@ def doc_words(doc):
     return doc._words
 
 
-def lint_doc(doc, rules, policy=None):
+def lint_doc(doc, rules, policy=None, topic=None):
     """policy: None or {"mode": "ban"|"density", "min": N}. In density mode, rhetorical-device rules show as
-    information unless the piece uses at least N of them: one X-not-Y is a choice, a pattern of them is a tell."""
+    information unless the piece uses at least N of them: one X-not-Y is a choice, a pattern of them is a tell.
+    topic: words from topic_words(); the vocabulary rules skip them and count what they skipped in doc.topic_skipped."""
     out = []
     words = doc_words(doc)
     path = doc.path.replace("\\", "/")
@@ -2370,6 +2391,15 @@ def lint_doc(doc, rules, policy=None):
             found.extend(ENGINE[rule.check](rule, doc))
         if rule.allow:
             found = [f for f in found if not allowed_hit(f.match, rule.allow)]
+        if topic and rule.d.get("category") == "vocabulary":
+            kept_found = []
+            for f in found:
+                if topic_hit(f.match, topic):
+                    k = re.sub(r"\s+", " ", f.match.lower()).strip()
+                    doc.topic_skipped[k] = doc.topic_skipped.get(k, 0) + 1
+                else:
+                    kept_found.append(f)
+            found = kept_found
         if rule.kind == "density" and found:
             dn = rule.density or {}
             n = len(found)
@@ -2499,7 +2529,8 @@ def usage_error(msg):
     sys.stderr.write("speakhuman: %s\n" % msg)
     sys.stderr.write("usage: speakhuman_lint.py <files-or-dirs|-> [--format=text|json] [--strict] [--verbose] "
                      "[--min-severity=error|warn|info] [--only=ids] [--ignore=ids] [--baseline=F] "
-                     "[--write-baseline=F] [--dest=markdown|plain] [--profile=F] [--voice] [--nominate] [--checklist] "
+                     "[--write-baseline=F] [--dest=markdown|plain] [--topic=F] [--profile=F] [--voice] [--nominate] "
+                     "[--checklist] "
                      "[--list-rules]\n")
     return 2
 
@@ -2507,7 +2538,7 @@ def usage_error(msg):
 def main(argv):
     fmt, strict, verbose, min_sev = "text", False, False, "info"
     only, ignore, baseline, write_bl, dest, list_rules = [], [], None, None, None, False
-    profile_arg, show_check, nominate, voice = None, False, False, False
+    profile_arg, show_check, nominate, voice, topic_path = None, False, False, False, None
     paths, unknown = [], []
     for a in argv:
         if a.startswith("--format="):
@@ -2531,6 +2562,8 @@ def main(argv):
             dest = a.split("=", 1)[1]
         elif a.startswith("--profile="):
             profile_arg = a.split("=", 1)[1]
+        elif a.startswith("--topic="):
+            topic_path = a.split("=", 1)[1]
         elif a == "--nominate":
             nominate = True
         elif a == "--checklist":
@@ -2554,6 +2587,15 @@ def main(argv):
         return usage_error("--min-severity must be error, warn (or warning) or info")
     if dest not in (None, "markdown", "plain"):
         return usage_error("--dest must be markdown or plain")
+    topic = None
+    if topic_path is not None:
+        try:
+            if os.path.getsize(topic_path) > MAX_BYTES:
+                return usage_error("--topic file %s is larger than %d MB" % (topic_path, MAX_BYTES // 1_000_000))
+            with open(topic_path, "r", encoding="utf-8", errors="replace") as fh:
+                topic = topic_words(fh.read())
+        except OSError as e:
+            return usage_error("cannot read --topic file %s: %s" % (topic_path, e))
     try:
         prof, prof_path = load_profile(profile_arg)
         project_changes = profile_relaxations(prof) if profile_from_workdir(prof_path) else []
@@ -2621,6 +2663,7 @@ def main(argv):
         print(json.dumps(outn if len(outn) != 1 else outn[0], indent=1, ensure_ascii=True))
         return 0
     findings, per_file, total_words, n_supp, n_off, not_english = [], [], 0, 0, 0, 0
+    topic_skipped = {}
     for path in readable:
         if path == "-":
             src, name = sys.stdin.read(), "<stdin>"
@@ -2635,7 +2678,9 @@ def main(argv):
         doc = read_doc(name, src, dest)
         doc.retired = list(doc.retired) + list(prof.get("retired_terms") or [])
         fs = lint_doc(doc, rules, {"mode": prof.get("device_policy", "density"), "min": prof.get("device_min", 2),
-                                   "scope": prof.get("device_scope", "piece")})
+                                   "scope": prof.get("device_scope", "piece")}, topic=topic)
+        for k, v in doc.topic_skipped.items():
+            topic_skipped[k] = topic_skipped.get(k, 0) + v
         findings.extend(fs)
         m = metrics(doc)
         m["suppressed"], m["off_lines"] = sum(doc.suppressed.values()), doc.off_lines
@@ -2682,7 +2727,7 @@ def main(argv):
         print(json.dumps({"summary": {"files": len(per_file), "words": total_words, "errors": ne, "warnings": nw,
                                       "info": ni, "baselined": n_base, "suppressed": n_supp, "off_lines": n_off,
                                       "skipped": skipped, "not_english_blocks": not_english, "profile": prof_path,
-                                      "project_profile_changes": project_changes},
+                                      "project_profile_changes": project_changes, "topic_skipped": topic_skipped},
                           "files": [{"path": p, "metrics": m} for p, m in per_file],
                           "findings": [f.as_dict() for f in findings]}, indent=1, ensure_ascii=True))
     else:
@@ -2697,6 +2742,10 @@ def main(argv):
                   (". House style findings are preferences from your profile, not defects." if "house_style" in by_cls else "."))
         if n_supp or n_off:
             print("Suppressed: %d finding(s) by slop-ok, %d line(s) inside slop-lint off regions." % (n_supp, n_off))
+        if topic_skipped:
+            print("Topic: %d finding(s) on words from %s were not reported: %s." % (
+                sum(topic_skipped.values()), topic_path,
+                ", ".join("%s (%d)" % (w, n) for w, n in sorted(topic_skipped.items()))))
         gaps = (["%d file(s) larger than %d MB" % (len(skipped), MAX_BYTES // 1_000_000)] if skipped else []) + \
                (["%d block(s) not in English (SpeakHuman checks English only)" % not_english] if not_english else [])
         if project_changes:

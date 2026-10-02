@@ -43,6 +43,7 @@ python3 "$L" --verbose draft.md            # every hit behind the density figure
 python3 "$L" --strict draft.md             # warnings fail the exit code too
 python3 "$L" - < reply.md                  # text that will render as markdown (a PR description)
 python3 "$L" --dest=plain - < email.txt    # an email, post or commit message (markdown syntax becomes a finding)
+python3 "$L" --topic=question.txt draft.md # the question or brief it answers: its own words are not flagged
 python3 "$L" --profile=my.json draft.md    # a specific profile
 python3 "$L" --voice                       # the profile's voice notes, call to action, strictness and voice file
 python3 "$L" --format=json draft.md        # machine-readable

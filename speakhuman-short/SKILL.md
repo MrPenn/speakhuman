@@ -50,6 +50,8 @@ python3 "$L" - < pr-description.md           # PR description or anything render
 python3 "$L" src/components/ locales/        # UI strings in JS, TS, JSX, Astro, Vue, and locale JSON
 ```
 
+   When the copy answers a question or a brief, save that to a file and add `--topic=question.txt`, so the vocabulary rules leave the subject's own words alone (`holistic` in an answer to a question about it). The summary lists every finding it skipped that way.
+
    If the linter reports that it checked nothing, or lists files or blocks it did not check (over 2 MB, not English), tell the user which.
 
 6. Fix every error. Read each warning in its sentence and fix it or keep it on purpose. In plain-text copy, never add a `slop-ok` comment, because it ships with the text; to accept a finding for one run, pass `--ignore=rule-id`.

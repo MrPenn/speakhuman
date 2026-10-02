@@ -199,6 +199,24 @@ def test_must_pass(path):
 
 def test_rule_behaviour():
     """What a rule does with a whole paragraph or a severity, beyond one fixture line."""
+    # --topic: the vocabulary rules skip the question's own words, in either direction of form, and count the skip.
+    def topic_lint(text, question):
+        doc = sl.read_doc("<stdin>", text, "plain")
+        return ids(sl.lint_doc(doc, RULES, topic=sl.topic_words(question))), doc.topic_skipped
+    holistic = "Holistic health looks at the whole person. Many people try holistic care first.\n"
+    ok("house-banned-vocabulary" in ids(lint(holistic, "<stdin>", "plain")), "holistic should be flagged without a topic")
+    got, skipped = topic_lint(holistic, "Holistic health or modern medicine: which should I trust?")
+    ok("house-banned-vocabulary" not in got and skipped == {"holistic": 2},
+       "--topic should skip the question's own word and count it: %s %s" % (got, skipped))
+    got, _ = topic_lint("Train the model so it stays robust under attack. It is a robust approach.\n",
+                        "How does adversarial training improve robustness?")
+    ok("overused-vocabulary" not in got, "--topic word 'robustness' should cover 'robust'")
+    got, _ = topic_lint("When it comes to taxes, file early.\n", "When it comes to taxes, what should I do first?")
+    ok("filler-phrases" in got, "--topic must not clear a filler phrase through its short words: %s" % got)
+    got, _ = topic_lint("Great question! The fund holds bonds.\n", "Great question about bond funds?")
+    ok("chatbot-residue" in got, "--topic applies to the vocabulary rules only")
+    got, _ = topic_lint("We leverage seamless tools.\n", "How do I pick a bond fund?")
+    ok("house-banned-vocabulary" in got, "--topic should not skip words the question does not use")
     # paragraph-level checks that line fixtures cannot express
     para = ("The team ran the pilot for six weeks across three offices and measured every referral that came through the "
             "new form, then compared the totals against the prior quarter before presenting them to the board. "
@@ -730,6 +748,17 @@ def test_cli():
     ok(run_cli(["--min-severity=loud", clean])[0] == 2, "bad --min-severity should exit 2")
     ok(run_cli(["--only=no-such-rule", clean])[0] == 2, "unknown --only id should exit 2")
     ok(run_cli(["--ignore=house-banned-vocabulary", dirty])[0] == 0, "--ignore should drop the rule")
+    question = os.path.join(tmp, "question.txt")
+    answer = os.path.join(tmp, "answer.txt")
+    open(question, "w").write("Is holistic medicine worth trying?\n")
+    open(answer, "w").write("Holistic medicine treats the whole person.\n")
+    ok(run_cli([answer])[0] == 1, "holistic should fail the run without a topic")
+    code, out, _ = run_cli(["--topic=" + question, answer])
+    ok(code == 0 and "Topic: 1 finding(s)" in out and "holistic (1)" in out,
+       "--topic should clear the topic word and say so: %d %s" % (code, out[-200:]))
+    code, out, _ = run_cli(["--format=json", "--topic=" + question, answer])
+    ok(code == 0 and json.loads(out)["summary"]["topic_skipped"] == {"holistic": 1}, "JSON summary should list topic skips")
+    ok(run_cli(["--topic=" + os.path.join(tmp, "no-such.txt"), answer])[0] == 2, "a missing --topic file should exit 2")
     locale = os.path.join(tmp, "en.json")
     open(locale, "w").write('{"note": "// slop-ok: house-banned-vocabulary", "cta": "Leverage our seamless platform today."}\n')
     ok(run_cli([locale])[0] == 1, "a directive in a locale value must not turn a finding into exit 0")

@@ -61,7 +61,7 @@ Severity: `error` is mechanical and high precision (the house avoid list, chatbo
 
 In plain mode (`--dest=plain` or a `.txt` file), fenced blocks and indented blocks after a blank line are code, such as pasted terminal output, and are not linted as prose.
 
-Controls, written inside a comment:
+Controls, written inside a comment. Only a comment in the file's own syntax counts: `<!-- -->` in markdown and markup, `//` or `/* */` in script and style, `{# #}` in Nunjucks, `{/* */}` in MDX, and `#` in YAML frontmatter. The same words in a string, a locale value, an attribute, a regular expression or visible text are content and suppress nothing.
 
 - `<!-- slop-ok: rule-id (reason) -->` or `// slop-ok: rule-id` on the same line or the line above. Name every rule you suppress; a `slop-ok` without a rule id suppresses nothing and is reported, and so is an id that does not exist.
 - `<!-- slop-lint off -->` and `<!-- slop-lint on -->` around a region (quoted source text, a pasted regulation). An `off` with no `on` is reported, because it hides the rest of the file.

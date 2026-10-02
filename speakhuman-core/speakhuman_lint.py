@@ -31,6 +31,9 @@ Reads .md .mdx .txt .html .astro .njk as prose, user-facing string literals in
 Suppress one line:     <!-- slop-ok: rule-id (reason) -->  or  // slop-ok: rule-id
                        (same line or the line above; a slop-ok with no rule id
                        suppresses nothing and is reported)
+Directives count only in a real comment: <!-- --> in markdown and markup, // or
+/* */ in script and style, {# #} in Nunjucks, {/* */} in MDX, # in frontmatter.
+In a string, locale value, attribute or regular expression they do nothing.
 Skip a region:         <!-- slop-lint off --> ... <!-- slop-lint on -->
 Retire a metaphor:     <!-- slop-lint retired: flywheel, north star, engine room -->
 The summary line counts what slop-ok and off regions hid. In plain-text copy a
@@ -406,6 +409,8 @@ class Doc:
         # directives: (line, offset, "ok" | "off" | "on", rule ids); suppressed: rule id -> findings hidden
         self.directives, self.suppressed, self.off_lines, self.off_unclosed = [], {}, 0, None
         self.not_english = 0
+        # comments: (start, end) of every comment the parsers passed, the only places a directive counts
+        self.comments, self.in_literal = [], 0
         self.line_starts = [0] + [m.end() for m in re.finditer(r"\n", src)]
 
     def add(self, blk):
@@ -1017,6 +1022,29 @@ def brace_end(src, k):
     return n - 1
 
 
+def note_comment(doc, a, b):
+    if not doc.in_literal:
+        doc.comments.append((a, b))
+
+
+def css_comments(doc, src, a, b, base):
+    """Record the /* */ comments in a <style> block, stepping over CSS strings."""
+    i = a
+    while i < b:
+        if src.startswith("/*", i):
+            j = src.find("*/", i + 2, b)
+            j = b if j < 0 else j + 2
+            note_comment(doc, base + i, base + j)
+            i = j
+        elif src[i] in "\"'":
+            q, i = src[i], i + 1
+            while i < b and src[i] not in (q, "\n"):
+                i += 2 if src[i] == "\\" else 1
+            i += 1
+        else:
+            i += 1
+
+
 def parse_html(doc, src, base, dest="markdown", expr=None, default="ui", roles=frozenset()):
     n, i = len(src), 0
     stack, classes, skip = [], [], 0
@@ -1032,7 +1060,9 @@ def parse_html(doc, src, base, dest="markdown", expr=None, default="ui", roles=f
         if c == "<":
             if src.startswith("<!--", i):
                 j = src.find("-->", i + 4)
-                i = n if j < 0 else j + 3
+                j = n if j < 0 else j + 3
+                note_comment(doc, base + i, base + j)
+                i = j
                 tb.gap(base + i - 1)
                 continue
             if src.startswith("<!", i) or src.startswith("<?", i):
@@ -1055,6 +1085,8 @@ def parse_html(doc, src, base, dest="markdown", expr=None, default="ui", roles=f
                     end = endm.start() if endm else n
                     if name == "script" and not re.search(r"type\s*=\s*[\"']?text/(?:template|html)", tt, re.I):
                         parse_js(doc, src[j:end], base + j, dest=dest)
+                    elif name == "style":
+                        css_comments(doc, src, j, end, base)
                     i = endm.end() if endm else n
                     continue
                 if name in SKIP_TAGS:
@@ -1098,7 +1130,10 @@ def parse_html(doc, src, base, dest="markdown", expr=None, default="ui", roles=f
             if expr == "njk" and (src.startswith("{%", i) or src.startswith("{#", i)):
                 close = "%}" if src[i + 1] == "%" else "#}"
                 j = src.find(close, i + 2)
-                i = n if j < 0 else j + 2
+                j = n if j < 0 else j + 2
+                if close == "#}":
+                    note_comment(doc, base + i, base + j)
+                i = j
                 tb.gap(base + i - 1)
                 continue
             if expr in ("astro", "svelte") and c == "{":
@@ -1188,7 +1223,9 @@ def js_literal(doc, src, a, b, base, masked_prefix, dest):
     if SKIP_BEFORE.search(masked_prefix[-160:]):
         return
     if HTMLISH.search(raw):
+        doc.in_literal += 1
         parse_html(doc, raw, base + a + 1, dest=dest, expr="template" if q == "`" else None, default="ui")
+        doc.in_literal -= 1
         return
     tb = TB()
     k, end = a + 1, a + 1 + len(raw)
@@ -1310,12 +1347,14 @@ def parse_js(doc, src, base, jsx=False, dest="markdown"):
         if c == "/" and i + 1 < n and src[i + 1] == "/":
             j = src.find("\n", i)
             j = n if j < 0 else j
+            note_comment(doc, base + i, base + j)
             mask(i, j)
             i = j
             continue
         if c == "/" and i + 1 < n and src[i + 1] == "*":
             j = src.find("*/", i + 2)
             j = n if j < 0 else j + 2
+            note_comment(doc, base + i, base + j)
             mask(i, j)
             i = j
             continue
@@ -1386,8 +1425,11 @@ def parse_js(doc, src, base, jsx=False, dest="markdown"):
 # Reading a document
 # ---------------------------------------------------------------------------
 
-# Directives count only inside a comment (HTML, //, /* */ or #), and never inside
-# a fenced code block or an inline code span, so docs can show them as examples.
+# A directive counts only inside a comment, as the file's own syntax defines one: <!-- --> in markdown and markup,
+# // and /* */ in script and style, {# #} in Nunjucks, {/* */} in MDX, # in YAML frontmatter. Text that only looks
+# like a comment (a string literal, a regular expression, an attribute value, a heading, visible text) is not one.
+# Plain text has no comments, so there any of the forms counts, and the summary says the directive ships with the
+# text. Fenced code blocks and inline code spans never count, so docs can show directives as examples.
 CMT = r"(?:<!--|//|/\*|#)[ \t]*"
 OKLINE_RE = re.compile(CMT + r"slop-ok\b(?:[ \t]*:([^\n]*))?")
 RULE_ID_RE = re.compile(r"(?<![\w-])(?:[a-z0-9]+(?:-[a-z0-9]+)+|\*)(?![\w-])")
@@ -1397,53 +1439,74 @@ RETIRED_RE = re.compile(CMT + r"slop-lint[ \t]+retired[ \t]*:[ \t]*([^\n]*?)[ \t
 # blanked with the region instead of leaking into the text as a stray "-->".
 OFFON_RE = re.compile(CMT + r"slop-lint[ \t]+(off|on)\b(?:[^\n]*?(?:-->|\*/))?")
 COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
-SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script\s*>", re.S | re.I)
+# CommonMark's open tag: a comment opener inside one (in an attribute value) is not a comment.
+OPEN_TAG_RE = re.compile(r"""<[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*/?>""")
+CODE_SPAN_RE = re.compile(r"(`+)[^\n]*?(?<!`)\1(?!`)")
 
 
-def script_regions(src, kind):
-    """The parts of a file that are script code, where a directive has to sit in a comment."""
-    if kind == "js":
-        return [(0, len(src))]
-    regions = []
-    if kind == "astro":
-        fm = re.match(r"\s*---[ \t]*\n(.*?)\n---[ \t]*(?:\n|$)", src, re.S)
-        if fm:
-            regions.append((fm.start(1), fm.end(1)))
-    if kind in ("html", "astro", "vue", "svelte"):
-        regions += [(m.start(1), m.end(1)) for m in SCRIPT_RE.finditer(src)]
-    return regions
-
-
-def string_spans(src, regions):
-    """Spans of string and template literals in script code. A 'slop-ok' or 'slop-lint off' inside one is UI text
-    or data, so it must not suppress anything."""
-    spans = []
-    for a, b in regions:
-        i = a
-        while i < b:
-            if src.startswith("//", i):
-                j = src.find("\n", i)
-                i = b if j < 0 or j > b else j
-                continue
-            if src.startswith("/*", i):
-                j = src.find("*/", i + 2)
-                i = b if j < 0 or j > b else j + 2
-                continue
-            c = src[i]
-            if c in "'\"`":
-                j = i + 1
-                while j < b and src[j] != c:
-                    if src[j] == "\\":
-                        j += 2
-                        continue
-                    if c != "`" and src[j] == "\n":
-                        break
-                    j += 1
-                spans.append((i, min(j + 1, b)))
-                i = j + 1
-                continue
-            i += 1
+def md_comment_spans(src, fenced, mdx=False):
+    """The comments in a markdown file: HTML comments outside code and tags, {/* */} in MDX, and # comments in
+    the YAML frontmatter."""
+    spans, lines = [], src.split("\n")
+    body, off = [], 0
+    for li, ln in enumerate(lines, start=1):
+        body.append(" " * len(ln) if li in fenced else CODE_SPAN_RE.sub(lambda m: " " * len(m.group()), ln))
+    body = "\n".join(body)
+    start = 0
+    if lines and lines[0].strip() == "---":
+        for j in range(1, len(lines)):
+            if lines[j].strip() in ("---", "..."):
+                off = len(lines[0]) + 1
+                for ln in lines[1:j]:
+                    q = None
+                    for k, ch in enumerate(ln):
+                        if q:
+                            q = None if ch == q else q
+                        elif ch in "\"'":
+                            q = ch
+                        elif ch == "#" and (k == 0 or ln[k - 1] in " \t"):
+                            spans.append((off + k, off + len(ln)))
+                            break
+                    off += len(ln) + 1
+                start = off + len(lines[j])
+                break
+    opener = re.compile(r"<!--|<[A-Za-z]" + (r"|\{/\*" if mdx else ""))
+    i = start
+    while True:
+        m = opener.search(body, i)
+        if not m:
+            break
+        if m.group() == "<!--":
+            j = body.find("-->", m.end())
+            j = len(body) if j < 0 else j + 3
+            spans.append((m.start(), j))
+        elif m.group() == "{/*":
+            j = body.find("*/}", m.end())
+            j = len(body) if j < 0 else j + 3
+            spans.append((m.start(), j))
+        else:
+            tag = OPEN_TAG_RE.match(body, m.start())
+            j = tag.end() if tag else m.end()
+        i = j
     return spans
+
+
+def comment_spans(path, src, kind, dest, fenced):
+    """Where directives may sit, or None for plain text, where any of the comment forms counts."""
+    low = path.lower()
+    if kind == "plain":
+        return None
+    if kind == "md":
+        return md_comment_spans(src, fenced, mdx=low.endswith(".mdx"))
+    if "slop-" not in src:
+        return []
+    # Read the file once with the parsers that read its text, and keep the comments they passed.
+    probe = Doc(path, src, dest, kind)
+    if kind == "json":
+        parse_js(probe, src, 0)
+    else:
+        parse_body(probe, src, kind, low, dest)
+    return probe.comments
 
 
 def code_lines(src):
@@ -1486,13 +1549,13 @@ def read_doc(path, src, dest_override=None):
     doc = Doc(path, src, dest, kind)
 
     fenced = code_lines(src) if kind in ("md", "plain") else set()
-    strings = string_spans(src, script_regions(src, kind))
+    spans = comment_spans(path, src, kind, dest, fenced)
 
     def live(m):
+        if spans is not None and not any(a <= m.start() < b for a, b in spans):
+            return False
         li = doc.pos(m.start())[0]
         line = src[doc.line_starts[li - 1]:m.start()]
-        if strings and any(a <= m.start() < b for a, b in strings):
-            return False
         return li not in fenced and (kind != "md" and kind != "plain" or line.count("`") % 2 == 0)
 
     for m in OKLINE_RE.finditer(src):
@@ -1533,6 +1596,12 @@ def read_doc(path, src, dest_override=None):
         for m in COMMENT_RE.finditer(work):
             work = blank(work, m.start(), m.end())
 
+    parse_body(doc, work, kind, low, dest)
+    english_only(doc)
+    return doc
+
+
+def parse_body(doc, work, kind, low, dest):
     if kind == "md":
         parse_markdown(doc, work, mdx=low.endswith(".mdx"))
     elif kind == "plain":
@@ -1552,8 +1621,6 @@ def read_doc(path, src, dest_override=None):
         parse_locale_json(doc, work, dest)
     else:
         parse_js(doc, work, 0, jsx=low.endswith((".jsx", ".tsx")))
-    english_only(doc)
-    return doc
 
 
 def english_only(doc):

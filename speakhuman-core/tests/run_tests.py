@@ -642,13 +642,47 @@ def test_directives():
     ok("house-banned-vocabulary" in ids(fs), "directive inside a code span was honored")
     fs = lint("<!-- slop-lint retired: flywheel -->\nThe flywheel is spinning.\n")
     ok("retired-vocabulary" in ids(fs), "retired directive not honored")
-    # A directive inside a string literal is UI text or data, not a comment: it suppresses nothing.
-    for name, src in (("x.js", 'const note = "// slop-ok: house-banned-vocabulary";\nconst cta = "Leverage our seamless platform today.";\n'),
-                      ("x.js", 'const a = `<!-- slop-lint off -->`;\nconst cta = "Leverage our seamless platform today.";\n'),
-                      ("x.html", '<script>const s = "// slop-ok: house-banned-vocabulary";</script>\n<p>Leverage our seamless platform.</p>\n')):
-        ok("house-banned-vocabulary" in ids(lint(src, name)), "a directive inside a string suppressed a finding in %s" % name)
-    fs = lint('// slop-ok: house-banned-vocabulary\nconst cta = "Leverage our seamless platform today.";\n', "x.js")
-    ok("house-banned-vocabulary" not in ids(fs), "a real JS comment directive should still suppress")
+    # A directive counts only inside a comment the file's own syntax defines. Text that looks like one (a string,
+    # a locale value, an attribute, a regular expression, visible text, a heading) suppresses nothing.
+    cta, ok_id = "Leverage our seamless platform today.", "// slop-ok: house-banned-vocabulary"
+    not_comments = (
+        ("x.js", 'const note = "%s";\nconst cta = "%s";\n' % (ok_id, cta)),
+        ("x.js", 'const a = `<!-- slop-lint off -->`;\nconst cta = "%s";\n' % cta),
+        ("x.js", 'const r = /<!-- slop-lint off -->/;\nconst cta = "%s";\n' % cta),
+        ("x.js", 'const r = /# slop-ok: house-banned-vocabulary/;\nconst cta = "%s";\n' % cta),
+        ("x.js", 'const h = "<b>Hi</b><!-- slop-lint off -->";\nconst cta = "%s";\n' % cta),
+        ("x.jsx", 'const A = () => <p>Type // slop-lint off here</p>;\nconst cta = "%s";\n' % cta),
+        ("en.json", '{"a": "%s", "b": "%s"}\n' % (ok_id, cta)),
+        ("en.json", '{"a": "<!-- slop-lint off -->", "b": "%s"}\n' % cta),
+        ("x.html", '<script>const s = "%s";</script>\n<p>%s</p>\n' % (ok_id, cta)),
+        ("x.html", '<p title="<!-- slop-ok: house-banned-vocabulary -->">%s</p>\n' % cta),
+        ("x.html", '<input placeholder="// slop-lint off">\n<p>%s</p>\n' % cta),
+        ("x.html", '<p>Type // slop-lint off to skip.</p>\n<p>%s</p>\n' % cta),
+        ("x.html", '<style>a::after { content: "/* slop-lint off */"; }</style>\n<p>%s</p>\n' % cta),
+        ("x.vue", '<template><p title="// slop-lint off">x</p><p>%s</p></template>\n' % cta),
+        ("x.md", "# slop-lint off\n\n%s\n" % cta),
+        ("x.md", "Type // slop-lint off to skip.\n\n%s\n" % cta),
+        ("x.md", '<img alt="<!-- slop-lint off -->" src="a.png">\n\n%s\n' % cta),
+        ("x.md", '---\ntitle: "%s # slop-ok: house-banned-vocabulary"\n---\n\nPlain.\n' % cta))
+    for name, src in not_comments:
+        ok("house-banned-vocabulary" in ids(lint(src, name)), "a directive outside a comment suppressed a finding: %s %r"
+           % (name, src[:60]))
+    comments = (
+        ("x.js", '%s\nconst cta = "%s";\n' % (ok_id, cta)),
+        ("x.js", '/* slop-lint off */\nconst cta = "%s";\n/* slop-lint on */\n' % cta),
+        ("x.jsx", 'const A = () => <div>{/* slop-lint off */}<p>%s</p>{/* slop-lint on */}</div>;\n' % cta),
+        ("en.json", '{\n  %s\n  "b": "%s"\n}\n' % (ok_id, cta)),
+        ("x.html", '<script>\n%s\nconst s = "%s";\n</script>\n' % (ok_id, cta)),
+        ("x.html", "<!-- slop-lint off --><p>%s</p><!-- slop-lint on -->\n" % cta),
+        ("x.njk", "{# slop-ok: house-banned-vocabulary #}\n<p>%s</p>\n" % cta),
+        ("x.astro", '---\n%s\nconst t = "%s";\n---\n<p>Hi there, friend.</p>\n' % (ok_id, cta)),
+        ("x.vue", "<template><!-- slop-ok: house-banned-vocabulary --><p>%s</p></template>\n" % cta),
+        ("x.mdx", "{/* slop-lint off */}\n%s\n{/* slop-lint on */}\n" % cta),
+        ("x.md", '<div>\n<!-- slop-lint off -->\n</div>\n\n%s\n\n<!-- slop-lint on -->\n' % cta),
+        ("x.md", '---\ntitle: "%s" # slop-ok: house-banned-vocabulary\n---\n\nPlain.\n' % cta))
+    for name, src in comments:
+        ok("house-banned-vocabulary" not in ids(lint(src, name)), "a directive in a real comment did not suppress: %s %r"
+           % (name, src[:60]))
 
     # Directives: a bare slop-ok suppresses nothing, an off with no on is reported, plain copy is warned.
     doc = sl.read_doc("d.md", "We leverage data. <!-- slop-ok -->\n")
@@ -696,6 +730,9 @@ def test_cli():
     ok(run_cli(["--min-severity=loud", clean])[0] == 2, "bad --min-severity should exit 2")
     ok(run_cli(["--only=no-such-rule", clean])[0] == 2, "unknown --only id should exit 2")
     ok(run_cli(["--ignore=house-banned-vocabulary", dirty])[0] == 0, "--ignore should drop the rule")
+    locale = os.path.join(tmp, "en.json")
+    open(locale, "w").write('{"note": "// slop-ok: house-banned-vocabulary", "cta": "Leverage our seamless platform today."}\n')
+    ok(run_cli([locale])[0] == 1, "a directive in a locale value must not turn a finding into exit 0")
     ok(run_cli(["--only=x-not-y*", dirty])[0] == 0, "--only wildcard should limit rules")
     code, out, _ = run_cli(["--format=json", dirty])
     try:
